@@ -1,12 +1,19 @@
 /*
- * Copyright (c) 2021 Vladimir Skrypnikov (Pheonix KageDesu)
+ * Copyright (c) 2022 Vladimir Skrypnikov (Pheonix KageDesu)
  * <http://kdworkshop.net/>
  *
- *
+
+* License: Creative Commons 4.0 Attribution, Share Alike, Commercial
+
+* You can use plugin in commercial projects on the sole
+* condition that this plugin has been legally acquired
+* (through purchase from https://ko-fi.com/pheonixkagedesu/shop
+* or https://boosty.to/kagedesu).
+
  */
 
 /*:
- * @plugindesc (v.2.1)[PRO] Visual Map Inventory
+ * @plugindesc (v.2.3)[PRO] Visual Map Inventory
  * @author Pheonix KageDesu
  * @target MZ MV
  * @url http://kdworkshop.net/plugins/map-inventory
@@ -114,7 +121,8 @@
     - IsOverWeight() - return true if overload (current items weight > max weight)
     - RefreshWeightSystem() - refrsh party weight
     - ModifyInventoryMaxWeight(value) - permanently add value to Party Max Weight(value should be > 0)
-    - Limited Cells System:
+    
+    == Limited Cells System:
     - IsHaveFreeSlotsForItems() - return true if player have free inventory slots for new items
     - IsHaveFreeSlotsForWeapons() - return true if player have free inventory slots for new weapons
     - IsHaveFreeSlotsForArmors() - return true if player have free inventory slots for new armors
@@ -161,7 +169,7 @@
  *      Comment "chance:X|V" - means chance to put item will be from variable ID X
  *         (value of variable X = chance value)
  *      Comment "chance:X|S" - means chance to put item will be from switch ID X
- *         (if switch X is ON -> 100%, if OFF -> 0 %)
+ *         (if switch X is ON -> 100 *)
  *  
  * ---------------------------------------------------------------------------
  * Since update 2.1 you can put items in chest based on variables
@@ -182,6 +190,22 @@
  *
  *  For more information and examples see: http://kdworkshop.net/map-inventory-random-items/
  * ---------------------------------------------------------------------------
+ * Since update 2.3 you can select not only Items from Inventory
+ *  via Select Item event command, but weapons or armor
+ *
+ * Use next script calls right before Select Item event command:
+ *  - MI_SetSelectModeW();  // for select weapon
+ *  - MI_SetSelectModeA(); // for select equipment (armor)
+ *
+ * After selecting done or invenroty closed select mode will be returned
+ *  to default - Items
+ * ---------------------------------------------------------------------------
+ * Since update 2.3 you can create  items \ weapons\ equipment only for certain
+ * actor usage
+ *
+ * Add <iOnlyForActor:X> to item\weapon\armor Note section, where X - Actor ID
+ * only who can use this item \ equip this weapon or armor
+ * ---------------------------------------------------------------------------
  *  For configurate visual, modify:
  *      img \ pMapInventory folder
  *      data \ PKD_MapInventorySettings.json
@@ -189,16 +213,22 @@
  *      data \ PKD_MapChestSettings.json
  * ---------------------------------------------------------------------------
  * If you like my Plugins, want more and offten updates,
- * please support me on Patreon!
+ * please support me on Boosty!
  * 
- * Patreon Page:
- *      https://www.patreon.com/KageDesu
+ * Boosty Page:
+ *      https://boosty.to/kagedesu
  * YouTube Channel:
  *      https://www.youtube.com/channel/UCA3R61ojF5vp5tGwJ1YqdgQ?
  *
- * You can use this plugin in your game thanks to all my Patrons!
  * 
-  *
+ 
+* License: Creative Commons 4.0 Attribution, Share Alike, Commercial
+
+* You can use plugin in commercial projects on the sole
+* condition that this plugin has been legally acquired
+* (through purchase from https://ko-fi.com/pheonixkagedesu/shop
+* or https://boosty.to/kagedesu).
+
  * 
 
  * @param OpenMapInventoryKey
@@ -247,6 +277,13 @@
  * @param headerInventorySettings
  * @text Inventory settings
  * 
+ * @param isSelectItemToEvent:bool
+ * @parent headerInventorySettings
+ * @text Is use for Select Item?
+ * @type boolean
+ * @default true
+ * @desc Allow pick up item from Inventory for Select Item event command?
+ * 
  * @param ShowEquipedItemsInInventory
  * @parent headerInventorySettings
  * @text Show Equipped items?
@@ -293,9 +330,15 @@
  * @parent headerInventorySettings
  * @text Allow Party Selector?
  * @type boolean
- * 
  * @default true
  * @desc Allow opens party selector when player want use item
+ * 
+ * @param partySelectorFilter:intA
+ * @parent AllowPartySelect
+ * @text Forbidden Actors
+ * @type actor[]
+ * @default []
+ * @desc Actors that will not appear in the Party Selector
  * 
  * @param AllowNonBattlePartyMembers
  * @parent headerInventorySettings
@@ -474,6 +517,7 @@
  * @default false
  * @desc [PRO] If true, you can see and use extra hot items cells on UI
  *  *
+ * 
  * @param OIHotKeyText:struct
  * @parent AllowOuterItems
  * @text Hot Key Text Settings
@@ -493,6 +537,13 @@
  * @type struct<LHotCell>[]
  * @default ["{\"key:str\":\"1\",\"pos:struct\":\"{\\\"x:int\\\":\\\"40\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"2\",\"pos:struct\":\"{\\\"x:int\\\":\\\"80\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"3\",\"pos:struct\":\"{\\\"x:int\\\":\\\"120\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"f\",\"pos:struct\":\"{\\\"x:int\\\":\\\"160\\\",\\\"y:int\\\":\\\"560\\\"}\"}"]
  * @desc Hot cells for inventory items on screen
+ * 
+ * @param OIHotCellsShowDesc:bool
+ * @parent AllowOuterItems
+ * @text Show Description?
+ * @type boolean
+ * @default true
+ * @desc Show description of hot cell item when hover by mouse?
  * 
  * @param spacer|cellsSystem @text‏‏‎ ‎@desc ===============================================
  * 
@@ -545,10 +596,58 @@
  * @desc Items throw out feature configuration 
  * @default {"margins:struct":"{\"x:int\":\"15\",\"y:int\":\"350\"}","startOpacity:int":"175","fadeOutSpeed:int":"5","throwOutSE":"Wind7"}
  * 
+ * @param spacer|newCatSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param isNewCatSys:b
+ * @text Use new categories system?
+ * @type boolean
+ * @default false
+ * @desc [PRO] If true, you can setup own inventory categories
+ * 
+ * @param newCatSysButtons:struct
+ * @parent isNewCatSys:b
+ * @text Button images
+ * @type struct<LUserCategoryButton>
+ * @default {"main":"inventoryCategoryBtn_00","hovered":"inventoryCategoryBtn_01","selected":"inventoryCategoryBtn_03"}
+ * @desc Images for categories buttons
+ * 
+ * @param newCatSysItems:structA
+ * @parent isNewCatSys:b
+ * @text Categories
+ * @type struct<LUserCategory>[]
+ * @default ["{\"name\":\"Items\",\"type\":\"items\",\"note\":\"\",\"icon\":\"inventoryCategory_iconItems\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"73\\\",\\\"y:int\\\":\\\"17\\\"}\"}","{\"name\":\"Weapons\",\"type\":\"weapons\",\"note\":\"\",\"icon\":\"inventoryCategory_iconWeapons\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"99\\\",\\\"y:int\\\":\\\"17\\\"}\"}","{\"name\":\"Armors\",\"type\":\"armors\",\"note\":\"\",\"icon\":\"inventoryCategory_iconArmor\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"125\\\",\\\"y:int\\\":\\\"17\\\"}\"}"]
+ * @desc Inventory categories
+ * 
+ * @param spacer|extraOptionsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param isUseExtraOptionsMenu:b
+ * @text Use extra options?
+ * @type boolean
+ * @default false
+ * @desc [PRO] If true, you can create extra options menu
+ * 
+ * @param getExtraMIOptions:structA
+ * @parent isUseExtraOptionsMenu:b
+ * @text Menu Items
+ * @type struct<LExtraOption>[]
+ * @default []
+ * @desc Extra options (menu items) for Inventory
+ * 
+ * @param spacer|otherExtraOptions @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param extendedLootPluginAddons
+ * @text Plugin: Extended Loot
+ * @desc [Optional] Extended Loot Plugin addons. If you not have Extended Loot plugin
+ * 
+ * @param extendedLootListShowDesc:b
+ * @parent extendedLootPluginAddons
+ * @text Show desc for Loot List?
+ * @type boolean
+ * @default true
+ * @desc Show descriptions for items in Loot List for Extended Loot Plugin
+ * 
  * @param spacer|endHolder @text‏‏‎ ‎@desc ===============================================
  * 
-
-
  * @command MI_VisualChest
  * @text Visual Chest
  * @desc Open Visual Chest
@@ -659,8 +758,764 @@
  * @text ‏
  * @desc
  * @default
+ */
+/*:ru
+ * @plugindesc (v.2.3)[PRO] Визуальный инвентарь
+ * @author Pheonix KageDesu
+ * @target MZ MV
+ * @url http://kdworkshop.net/plugins/map-inventory
+ *
+ * @help
+ * ---------------------------------------------------------------------------
+ * Доп. гайды и ресурсы можно найти тут:
+ * http://kdworkshop.net/map-inventory/
+ * 
+ * Спасибо: SMO_Valadorn, Zee, Fiquei, Carlos Ferreira
+ *
+ * === Плагин имеет команды плагина
+ *
+ * Список команд плагина для PRG Maker MV
+    - OpenMapInventory - открыть инвентарь
+
+    ---- КОМАНДЫ НИЖЕ ТОЛЬКО ДЛЯ [PRO] ВЕРСИИ ----
+
+    - MapUserChest - открыть хранилище сундука
+    - VisualChest NAME ICON - открыть сунудк,
+        где NAME - название (заголовок)
+        ICON - изображение иконки из папки img\pMapInventory
+        NAME и ICON - эти параметры опциональны
+
+        Примеры:
+        VisualChest SomeChest
+        VisualChest SomeChest MyIcon
+
+    - VisualChestStored NAME - открыть сундук (который будет сохранять вещи)
+
+    - VisaulChestStored NAME TYPE - открыть сундук только для специальных типов
+        VisaulChestStored Ammunition Ammo|Grenade (пример)
+        Можно использовать несколько типов, разделяя их символом | (без пробелов)
+        Чтобы задать тип предмету, исп. заметку <aItemType:TYPE>
+
+    - VisaulChestStored NAME TYPE ICON
+
+    - VisualChestIcon ICON - задать пользовательскую иконку для сундука
+        ICON - изображение иконки из папки img\pMapInventory
+         * Вызывайте эту команду плагина перед командой VisualChestStored
+
+    - SetStoredChestLimit LIMIT - установить лимит свободных ячеек для сундука
+        LIMIT - количество открытых ячеек
+        * Вызывайте эту команду плагина перед командой VisualChestStored
+
+    - InventoryButton Move X Y
+    - InventoryButton Reset - сбросить позицию и настройки
+    - InventoryButton Show
+    - InventoryButton Hide
+    - InventoryButton Disable
+    - InventoryButton Enable
+ * ---------------------------------------------------------------------------
+ * === Вызовы скриптов
+ *
+ *      - OpenMapInventory()
+ *      - CloseMapInventory()
+ *      - DisableMapInventory()
+ *      - EnableMapInventory()
+ *      - IsInventoryAllowed() - возвращает true или false
+ *      - OpenOrCloseMapInventory()
+ *      - HideMapInventoryUI()
+ *      - ShowMapInventoryUI()
+ 
+    ---- КОМАНДЫ НИЖЕ ТОЛЬКО ДЛЯ [PRO] ВЕРСИИ ----
+
+    - OpenMapUserChest()
+    - CloseMapUserChest()
+
+    - MIOpenVisualChest(NAME) - открыть сундук, где NAME - имя сундука (заголовок)
+        Пример: MIOpenVisualChest("Сундук");
+
+    - MIOpenVisualChestStored(NAME, TYPE) - открыть сундук только для специальных типов
+        MIOpenVisualChestStored("Ammunition", "Ammo|Grenade"); (для примера)
+        Можно использовать несколько типов, разделяя их символом | (без пробелов)
+        Чтобы задать тип предмету, исп. заметку <aItemType:TYPE>
+
+    - MIOpenVisualChestStoredForTrade(NAME, TYPE) - аналогичная команда, только
+        данный сундук будет доступен для продажи вещей из него (по имени)
+        Example: MIOpenVisualChestStoredForTrade("For Sell", "Misc")
+        Команды для продажи вещей см. ниже
+
+    - MISetIconForChest(ICON_PIC_NAME) - задать пользовательскую иконку для сундука
+        Call this script call before MIOpenVisualChest | MIOpenVisualChestStored
+        ICON_PIC_NAME - изображение иконки из папки img\pMapInventory
+        * Используйте перед скриптом MIOpenVisualChest и MIOpenVisualChestStored
+
+    - ClearAllStoredChests() - очистить состояние всех сундуков на всех картах
+    - ClearStoredChestsOnMap() - очистить состояние всех сундуков на ТЕКУЩЕЙ карте
+    - ClearStoredChestsOnMap(ID) - очистить состояние всех сундуков на карте с номером = ID
+ 
+    - AddWeaponInPlayerStorage(ID, COUNT) - добавить оружие (номер = ID) в хранилище игрока (COUNT - количество)
+    - AddArmorInPlayerStorage(ID, COUNT) - добавить броню (номер = ID) в хранилище игрока (COUNT - количество)
+    - AddItemInPlayerStorage(ID, COUNT) - добавить предмет (номер = ID) в хранилище игрока (COUNT - количество)
+        * Квестовые предметы (Key Items) нельзя добавить в хранилище
+    
+    - MoveAllItemsToStorage() - переместить всё содержимое инвентаря в хранилище (кроме квестовых предметов)
+    - MoveEquipedItemsToStorage() - переместить все экипированные вещи в хранилище (только с персонажа игрока)
+    - ClearPlayerStorage() - очистить хранилище игрока (операция необратима)
+    - TakeAllFromContainer() - забрать всё из открытого на данный момент сундука (хранилища)
+     
+    == Кнопка на экране:
+    - MIButtonMove(x, y) - изменить позицию
+    - MIButtonVisibility(state) - изменить видимость
+    - MIButtonState(state) - изменить состояние (true - активна, false - деактивировать)
+    - MIButtonReset() - сбросить все настройки кнопки (и позицию) по умолчанию
+
+    == Система веса:
+    - GetMaxWeight() - максимально возможный переносимый вес
+    - GetCurrentWeight() - текущий вес всех вещей в инвентаре
+    - IsOverWeight() - возвращает true если есть превышение веса
+    - RefreshWeightSystem() - пересчитать текущий вес
+    - ModifyInventoryMaxWeight(value) - добавить значение value к максимально возможному весу
 
 
+    == Система ограничения количества открытых ячеек:
+    - IsHaveFreeSlotsForItems() - возвращает true, если игрок имеет место для новых предметов (есть свободные ячейки)
+    - IsHaveFreeSlotsForWeapons() - возвращает true, если игрок имеет место для нового оружия
+    - IsHaveFreeSlotsForArmors() - возвращает true, если игрок имеет место для новой брони
+    - MISetStoredChestLimit(limit) - установить количество (limit) открытых ячеек для сундука
+
+    == Торговля (сундук):
+    - MIPriceForItemsInTradeChest(NAME, VAR_ID) - вернуть общую стоимость предметов в сундуке (NAME)
+        также (опционально) установить значение в переменную (VAR_ID) (не удаляет предметы из сундука)
+
+    - MIClearTradeChest(NAME) - удалить все вещи из торгового сундука (просто удалить, без оплаты)
+
+    - MITradeItemsFromChest(NAME) - вернуть общую стоимость предметов в сундуке (NAME)
+        и дать золото игроку (удаляет предметы из сундука)
+
+ * ---------------------------------------------------------------------------
+ *
+ * === Заметки для Базы данных
+ * Предметы\Оружие\Броня:
+ *      <aItemType: CUSTOM_TYPE> \\ Тип
+ *      <aItemType: CUSTOM_TYPE|CUSTOM_TYPE> \\ может быть несколько, через |
+ *      <aItemTypeColor: HEX_COLOR> \\ Цвет названия типа
+ *      <itemRare: QUALITY_LEVEL> \\ Уровень качества
+ * 
+ *      [Только для PRO версии]
+ *      <weight: ITEM_WEIGHT> \\ вес предмета
+ *      <weightStore: ADD_TO_MAX_WEIGHT> \\ добавляет к макс. переносимому весу
+ *      <iImg: NAME> \\ картинка заместо иконки (из папки img\pMapInventory\Icons\)
+ * 
+ *  Примеры всех заметок:
+ *      <aItemType:Аммуниция>
+ *      <aItemType:Оружие|Инструмент>
+ *      <aItemTypeColor:#ba9059>
+ *      <itemRare:2>
+ *      <weight:6>
+ *      <weightStore:20>
+ *      <iImg:potion>
+ * ---------------------------------------------------------------------------
+ *  [Только для PRO] Как добавить шанс появляения вещи в сунудке:
+ * 
+ *  Добавьте комментарий "chance:X" перед командой события на добавление вещи
+ *      где X - шанс выпадения вещи в %, 10, 20, 50 и т.д...
+ * 
+ *      Пример: chance:50 - 50% шанс выпадения след. предмета (оружия, брони)
+ *
+ *  Расширенное значение шанса:
+ *      Комментарий "chance:X|V" - означает что шанс будет взят из переменной с номером X
+ *
+ *      Комментарий "chance:X|S" - шанс будет взят из переключателя с номером X
+ *         (если переключатель Х ВКЛ. -> 100 *)
+ *  
+ * ---------------------------------------------------------------------------
+ * Начиная с обновления 2.1 появились расширенные комментарии для
+ * добавления предметов в сундук с учётом разных условий и шанса
+ * 
+ *
+ *   Комментарий "put:TYPE:ID:COUNT" ПОСЛЕ вызова скрипта открытия сундука
+ *      и ДО любой команды события на получения предмета (оружия, брони) (НЕОБХОДИМА хотя бы одна)
+ *   Где: TYPE принимает одно из значений: item (для предметов), weapon (для оружия), armor (для брони)
+ *          ID - Номер предмета из базы данных (7) или номер переменной (18|V)
+ *          COUNT - количество (1) или номер переменной (100|V)
+ *
+ *   Примеры:
+ *      chance:50
+ *      put:item:7:1 \\ Предмет (item) с номером 7, количество 1
+ *      chance:10
+ *      put:weapon:10|V:1 - Оружие с номером из переменной 10, количество 1
+ *      put:item:8:4|V - Предмет с номером 8 (количество из переменной 4)
+ *
+ *  Подробный гайд тут: http://kdworkshop.net/map-inventory-random-items/
+ * ---------------------------------------------------------------------------
+ * Начиная с обновления 2.3 можно выбирать из инвентаря не только предметы
+ *  но и оружие и экипировку (для команды события Выбор предмета)
+ *
+ * Исп. след. вызовы скриптов прям перед коммандой Выбрать предмет:
+ *  - MI_SetSelectModeW();  // для выбора оружия
+ *  - MI_SetSelectModeA(); // для выбора экипировки
+ *
+ * Когда выбор сделал (или инвентарь закрыт), режим выбора
+ *  вернётся обратно на Предмет автоматически
+ * ---------------------------------------------------------------------------
+ *  Начиная с обновления 2.3 вы можете сделать чтобы предмет \ оружие или
+ * доспех мог использовать только конкретный персонаж
+ *
+ * Добавьте <iOnlyForActor:X> к предмету в заметки, где Х - номер персонажа
+ * который может использовать данный предмет (и только он)
+ *
+ * Add <iOnlyForActor:X> to item\weapon\armor Note section, where X - Actor ID
+ * only who can use this item \ equip this weapon or armor
+ * ---------------------------------------------------------------------------
+ *  Чтобы изменить визуальные настройки, Вы можете редактировать
+ *  следующие файлы:
+ *      img \ pMapInventory folder
+ *      data \ PKD_MapInventorySettings.json
+ *      data \ PKD_UserChestSettings.json
+ *      data \ PKD_MapChestSettings.json
+ * ---------------------------------------------------------------------------
+ * Получить PRO версию, а также поддержать меня Вы можете на Boosty
+ * 
+ * Boosty:
+ *      https://boosty.to/kagedesu
+ * YouTube:
+ *      https://www.youtube.com/channel/UCA3R61ojF5vp5tGwJ1YqdgQ?
+ *
+ * 
+ 
+* Лицензия: Creative Commons 4.0 Attribution, Share Alike, Commercial
+
+* Вы можете использовать плагин в коммерческих проектах на единственном
+* условие, что этот плагин был приобретен на законных основаниях
+* (через покупку на сайте https://boosty.to/kagedesu).
+
+ * 
+
+ * @param OpenMapInventoryKey
+ * @text Кнопка: открыть инвентарь
+ * @type string
+ * @default i
+ * @desc
+ * 
+ * @param TakeAllChestKey
+ * @text Кнопка: взять всё
+ * @type string
+ * @default t
+ * @desc
+ * 
+ * @param useGamepad:b
+ * @text Исп. геймпад?
+ * @type boolean
+ * @default false
+ * @desc Активировать режим управления инвентарём при помощи геймпада (должен быть подключён)
+ * 
+ * @param gpOpenKey
+ * @parent useGamepad:b
+ * @text Кнопка: открыть инвентарь
+ * @type select
+ * @option A
+ * @option B
+ * @option X
+ * @option Y
+ * @option Start
+ * @option Back
+ * @option LB
+ * @option RB
+ * @option LTrigger
+ * @option RTrigger
+ * @option LStick
+ * @option RStick
+ * @option dLeft
+ * @option dRight
+ * @option dUp
+ * @option dDown
+ * @default Back
+ * @desc Кнопка на геймпдае чтобы открыть \ закрыть инвентарь
+ * 
+ * @param spacer|inventorySettings @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param headerInventorySettings
+ * @text Основные настройки
+ * 
+ * @param isSelectItemToEvent:bool
+ * @parent headerInventorySettings
+ * @text Исп. в выборе предметов?
+ * @type boolean
+ * @default true
+ * @desc Исп. выбор предмета из инвентаря в режиме выбора предметов в сообщениях?
+ * 
+ * 
+ * @param ShowEquipedItemsInInventory
+ * @parent headerInventorySettings
+ * @text Показывать экип.?
+ * @type boolean
+ * @default true
+ * @desc Показывать экипированные предметы в инвентаре?
+ * 
+ * @param MapInventoryDrag
+ * @parent headerInventorySettings
+ * @text Перетаскивание?
+ * @type boolean
+ * @default true
+ * @desc Разрешить перетаскивание окна инвентаря с помощью мышки? (зажать и перетаскивать)
+ * 
+ * @param MapInventorySortEquip
+ * @parent headerInventorySettings
+ * @text Сортировка экип.?
+ * @type boolean
+ * @default true
+ * @desc Экипированные предметы будут всегда впереди списка предметов
+ * 
+ * @param MapInventorySortItems
+ * @parent headerInventorySettings
+ * @text Сортировка предметов
+ * @type boolean
+ * @default true
+ * @desc Предметы, которые можно исп. в данный момент, всегда будут впереди списка предметов
+ * 
+ * @param AllowAutoRefreshUsable
+ * @parent headerInventorySettings
+ * @text Авто. обновление?
+ * @type boolean
+ * @default true
+ * @desc Обновлять статус предметов автоматически (можно исп. или нет) пока инвентарь открыт. Влияет на производительность.
+ * 
+ * @param UseSlider
+ * @parent headerInventorySettings
+ * @text Исп. слайдер?
+ * @type boolean
+ * @default true
+ * @desc Если ВКЛ. то при перемещении предмета вы сможете указать количество при помощи слайдера
+ * 
+ * @param AllowPartySelect
+ * @parent headerInventorySettings
+ * @text Выбор члена партии?
+ * @type boolean
+ * @default true
+ * @desc Будет ли показано доп. меню для выбора сопартийца при исп. предмета?
+ * 
+ * @param partySelectorFilter:intA
+ * @parent AllowPartySelect
+ * @text Запрещённые персонажи
+ * @type actor[]
+ * @default []
+ * @desc Список персонажей, которые не будут появляться в списке выбора сопартийца
+ * 
+ * @param AllowNonBattlePartyMembers
+ * @parent headerInventorySettings
+ * @text Более 4 сопартийвец?
+ * @type boolean
+ * @default false
+ * @desc [PRO] Вы можете применять предметы на всех членов партии (если их более 4х)
+ * 
+ * @param StaticDescPosition:b
+ * @parent headerInventorySettings
+ * @text Статичная позиция описания?
+ * @type boolean
+ * @default false
+ * @desc Если ВКЛ. окно описания всегда будет в одной позиции, которую вы задали, а не рядом с курсором 
+ * 
+ * @param StaticDescPosXY:struct
+ * @parent StaticDescPosition:b
+ * @text Позиция
+ * @type struct<XY2>
+ * @default {"x:e":"0","y:e":"0"}
+ * @desc Позиция на экране для параметра  Статичная позиция описания
+ * 
+ * @param spacer|chestsSettings @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param headerChestsSettings
+ * @text Настройки сундука
+ * 
+ * @param AllowStoreInChest
+ * @parent headerChestsSettings
+ * @text Можно хранить предметы в сундуках?
+ * @type boolean
+ * @default true
+ * @desc Если да, то можно переместить предметы из инвентаря в сундук (VisualChestStored)
+ * 
+ * @param GoldItem:i
+ * @parent headerChestsSettings
+ * @text Золото
+ * @type item
+ * @default 0
+ * @desc Предмет для отображения золота в сундуках, если 0 - то игрок будет получать золото сразу
+ * 
+ * @param chestTakeAllDelay:i
+ * @parent headerChestsSettings
+ * @text Задержка (Take All)
+ * @type number
+ * @min 0
+ * @max 20
+ * @default 0
+ * @desc Задержка (в кадрах) между подбором каждого предмета при нажатии кнопки Взять всё. 0 - нет задержки, все сразу берутся.
+ * 
+ * 
+ * @param spacer|weightSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param UseWSystem
+ * @text Исп. систему веса?
+ * @type boolean
+ * @default false
+ * @desc [PRO] Если ВКЛ., то учитывается вес каждого одетого предмета (вес необходимо задать для каждого предмета в заметке)
+ * 
+ * 
+ * @param wSystemVariableId
+ * @parent UseWSystem
+ * @text Макс. вес переменная
+ * @type variable
+ * @default 1
+ * @desc Установите макс. возможный переносимый вес в эту переменную
+ * 
+ * @param wSystemAutoStateId
+ * @parent UseWSystem
+ * @text Состояние перевеса
+ * @type state
+ * @default 0
+ * @desc Когда у игрока (группы) перевес, это состаяние будет накладыватся автоматически (и сниматься тоже)
+ * 
+ * @param wSystemAllowSlowDown
+ * @parent UseWSystem
+ * @text Замедление?
+ * @type boolean
+ * @default false
+ * @desc Вкл. замедление движения игрока когда у него перевес?
+ * 
+ * @param spacer|limitedSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param UseLimitedCellsSystem:b
+ * @text Исп. систему ограниченных ячеек?
+ * @type boolean
+ * @default false
+ * @desc [PRO] Если ВКЛ. можно установить сколько конкретно ячеек открыто в инвентаре для хранения предметов
+ * 
+ * @param lcVariableItems:int
+ * @parent UseLimitedCellsSystem:b
+ * @text Кол-во ячеек для предметов
+ * @type variable
+ * @default 1
+ * @desc Задайте в эту ПЕРЕМЕННУЮ количество открытых ячеек для предметов
+ * 
+ * @param lcVariableWeapons:int
+ * @parent UseLimitedCellsSystem:b
+ * @text Кол-во ячеек для оружия
+ * @type variable
+ * @default 1
+ * @desc Задайте в эту ПЕРЕМЕННУЮ количество открытых ячеек для оружия
+ * 
+ * @param lcVariableArmors:int
+ * @parent UseLimitedCellsSystem:b
+ * @text Кол-во ячеек для экипировки
+ * @type variable
+ * @default 1
+ * @desc Задайте в эту ПЕРЕМЕННУЮ количество открытых ячеек для экипировки
+ * 
+ * @param lsIgnoreLimitByGainItems:b
+ * @parent UseLimitedCellsSystem:b
+ * @text Исп. лимит только в сунудках?
+ * @type boolean
+ * @default true
+ * @desc Если ВКЛ., то предмет можно будет дать игроку через команду события даже если НЕТ свободных ячеек.
+ * 
+ * @param spacer|screenButton @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param UseScreenButton
+ * @text Кнопка на экране?
+ * @type boolean
+ * @default true
+ * @desc [PRO] Если ВКЛ., на экране будет доп. кнопка чтобы открыть или закрыть инвентарь
+ * 
+ * @param spacer|rareItemsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param AllowRareItemSystem
+ * @text Allow Item Quality System?
+ * @type boolean
+ * @default true
+ * @desc If true, you can set quality level to items, using Note command
+ * 
+ * @param QualitySystemColor:b
+ * @parent AllowRareItemSystem
+ * @text Items names with quality colors?
+ * @type boolean
+ * @default false
+ * @desc If true, item name color in Map Inventory will be same as item quality level color
+ * 
+ * @param QualitySystemColorWindows:b
+ * @parent QualitySystemColor:b
+ * @text In default windows as well?
+ * @type boolean
+ * @default false
+ * @desc If true, item name color in default windows will be same as item quality level color
+ * 
+ * 
+ * @param spacer|equipStatsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param AllowEquipsStats
+ * @text Allow Equipments stats?
+ * @type boolean
+ * @default true
+ * @desc If true, you can see extra information (mouse scroll)
+ * 
+ * @param ShowFullEquipedStats
+ * @parent AllowEquipsStats
+ * @text Show full stats when equipped?
+ * @type boolean
+ * @default false
+ * @desc If false, when item is equipped you can see only gained stats (without actor ones)
+ * 
+ * @param ExtraDescriptionsForStats:structA
+ * @parent AllowEquipsStats
+ * @text Extra Descriptions
+ * @type struct<LExtraDescData>[]
+ * @default []
+ * @desc Extra description page for weapon or equipment (mouse scroll)
+ * 
+ * @param spacer|outerItemsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param AllowOuterItems
+ * @text Allow HotItems?
+ * @type boolean
+ * @default false
+ * @desc [PRO] If true, you can see and use extra hot items cells on UI
+ *  *
+ * @param OIHotKeyText:struct
+ * @parent AllowOuterItems
+ * @text Hot Key Text Settings
+ * @type struct<CText>
+ * @default {"visible:bool":"true","size:struct":"{\"w:int\":\"22\",\"h:int\":\"20\"}","margins:struct":"{\"x:int\":\"10\",\"y:int\":\"18\"}","alignment:str":"right","outline:struct":"{\"color:css\":\"\",\"width:int\":\"2\"}","font:struct":"{\"face:str\":\"Consolas\",\"size:int\":\"14\",\"italic:bool\":\"false\"}","textColor:css":"#F9E159"}
+ * 
+ * @param OIHotKeyEnable:bool
+ * @parent AllowOuterItems
+ * @text Hot Keys Enabled?
+ * @type boolean
+ * @default true
+ * @desc Can player use hot keys to activate hot items?
+ * 
+ * @param OIHotCells:structA
+ * @parent AllowOuterItems
+ * @text Screen Hot Cells
+ * @type struct<LHotCell>[]
+ * @default ["{\"key:str\":\"1\",\"pos:struct\":\"{\\\"x:int\\\":\\\"40\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"2\",\"pos:struct\":\"{\\\"x:int\\\":\\\"80\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"3\",\"pos:struct\":\"{\\\"x:int\\\":\\\"120\\\",\\\"y:int\\\":\\\"560\\\"}\"}", "{\"key:str\":\"f\",\"pos:struct\":\"{\\\"x:int\\\":\\\"160\\\",\\\"y:int\\\":\\\"560\\\"}\"}"]
+ * @desc Hot cells for inventory items on screen
+ * 
+ * @param OIHotCellsShowDesc:bool
+ * @parent AllowOuterItems
+ * @text Show Description?
+ * @type boolean
+ * @default true
+ * @desc Show description of hot cell item when hover by mouse?
+ * 
+ * @param spacer|cellsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param headerCellsSettings
+ * @text Inventory Cells Settings
+ * 
+ * @param UseImageIconsInWindows:b
+ * @parent headerCellsSettings
+ * @text Icons images in Windows?
+ * @type boolean
+ * @default true
+ * @desc Use images as icons (iImg) in default windows?
+ * 
+ * @param UseCustomCellsSize:b
+ * @parent headerCellsSettings
+ * @text Use custom size of cells?
+ * @type boolean
+ * @default false
+ * @desc If true, you can change size and count per page of inventory cells
+ * 
+ * @param CustomCellSettings:struct
+ * @parent UseCustomCellsSize:b
+ * @text Custom Cells Settings
+ * @type struct<LCustomCell>
+ * @default {"iconSize:i":"30","columnsPerPage:i":"5","rowsPerPage:i":"5","iconMode:i":"1"}
+ * @desc Custom Cells Settings
+ * 
+ * @param spacer|extraDescriptions @text‏‏‎ ‎@desc ===============================================
+ * 
+ * 
+ * @param ExtraDescriptions:structA
+ * @text Extra Descriptions
+ * @type struct<LBigInfoData>[]
+ * @default []
+ * @desc Description text for item when you press left mouse button on it
+ * 
+ * 
+ * @param spacer|throwOutSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param AllowThrowOutSystem:b
+ * @text Allow Items Throw Out?
+ * @type boolean
+ * @default true
+ * @desc [PRO] If true, you can throw out items from inventory
+ * 
+ * @param ThrowOutSettings:struct
+ * @parent AllowThrowOutSystem:b
+ * @type struct<LThrowOutSettings>
+ * @text Throw Out Settings
+ * @desc Items throw out feature configuration 
+ * @default {"margins:struct":"{\"x:int\":\"15\",\"y:int\":\"350\"}","startOpacity:int":"175","fadeOutSpeed:int":"5","throwOutSE":"Wind7"}
+ * 
+ * @param spacer|newCatSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param isNewCatSys:b
+ * @text Use new categories system?
+ * @type boolean
+ * @default false
+ * @desc [PRO] If true, you can setup own inventory categories
+ * 
+ * @param newCatSysButtons:struct
+ * @parent isNewCatSys:b
+ * @text Button images
+ * @type struct<LUserCategoryButton>
+ * @default {"main":"inventoryCategoryBtn_00","hovered":"inventoryCategoryBtn_01","selected":"inventoryCategoryBtn_03"}
+ * @desc Images for categories buttons
+ * 
+ * @param newCatSysItems:structA
+ * @parent isNewCatSys:b
+ * @text Categories
+ * @type struct<LUserCategory>[]
+ * @default ["{\"name\":\"Items\",\"type\":\"items\",\"note\":\"\",\"icon\":\"inventoryCategory_iconItems\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"73\\\",\\\"y:int\\\":\\\"17\\\"}\"}","{\"name\":\"Weapons\",\"type\":\"weapons\",\"note\":\"\",\"icon\":\"inventoryCategory_iconWeapons\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"99\\\",\\\"y:int\\\":\\\"17\\\"}\"}","{\"name\":\"Armors\",\"type\":\"armors\",\"note\":\"\",\"icon\":\"inventoryCategory_iconArmor\",\"iconMargins:struct\":\"{\\\"x:int\\\":\\\"0\\\",\\\"y:int\\\":\\\"0\\\"}\",\"position:struct\":\"{\\\"x:int\\\":\\\"125\\\",\\\"y:int\\\":\\\"17\\\"}\"}"]
+ * @desc Inventory categories
+ * 
+ * @param spacer|extraOptionsSystem @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param isUseExtraOptionsMenu:b
+ * @text Исп. доп. опции?
+ * @type boolean
+ * @default false
+ * @desc [PRO] Если ВКЛ., вы можете создать доп. кнопки (меню) рядом с окном инвентаря
+ * 
+ * @param getExtraMIOptions:structA
+ * @parent isUseExtraOptionsMenu:b
+ * @text Доп. кнопки
+ * @type struct<LExtraOption>[]
+ * @default []
+ * @desc
+ * 
+ * @param spacer|otherExtraOptions @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @param extendedLootPluginAddons
+ * @text Plugin: Extended Loot
+ * @desc [Optional] Extended Loot Plugin addons. If you not have Extended Loot plugin
+ * 
+ * @param extendedLootListShowDesc:b
+ * @parent extendedLootPluginAddons
+ * @text Show desc for Loot List?
+ * @type boolean
+ * @default true
+ * @desc Show descriptions for items in Loot List for Extended Loot Plugin
+ * 
+ * @param spacer|endHolder @text‏‏‎ ‎@desc ===============================================
+ * 
+ * @command MI_VisualChest
+ * @text Visual Chest
+ * @desc Открыть сундук
+ * 
+ * @arg name
+ * @text Имя
+ * @desc Заголовок сундука
+ * @type text
+ * @default СУНДУК
+ * 
+ * @arg image
+ * @text Иконка
+ * @desc Имя иконки для сундука. Пусто - стандартная
+ * @type file
+ * @require 1
+ * @dir img\pMapInventory
+ * @default
+ * 
+ * @command MI_VisualChestStored
+ * @text Stored Visual Chest
+ * @desc Открыть сундук с возможностью хранить в нём вещи
+ * 
+ * @arg name
+ * @text Имя
+ * @desc Заголовок сундука
+ * @type text
+ * @default СУНДУК
+ * 
+ * @arg types
+ * @text Типы
+ * @desc Можно будет хранить только эти типы, пример: Зелья (чтобы указать несколько типов, исп. | -> Ключи|Зелья)
+ * @type text
+ * 
+ * @arg limit
+ * @text Лимит
+ * @type number
+ * @min 0
+ * @desc Лимит ячеек в данном сунудке (Толькое если ВКЛ. соотв. параметр плагина) 0 - нет лимита
+ * @default 0
+ * 
+ * @arg image
+ * @text Иконка
+ * @desc Имя иконки для сундука. Пусто - стандартная
+ * @type file
+ * @require 1
+ * @dir img\pMapInventory
+ * @default
+ * 
+ * @arg forTrade
+ * @text Для продажи?
+ * @type boolean
+ * @desc [ТРЕБУЕТСЯ уникальное Имя] Этот сундук будет доступен для скриптов системы Торговля вещами из сундуков
+ * @default false
+ * 
+ * @command MI_UserChestOpen
+ * @text Хранилище
+ * @desc Открыть хранилище игрока
+ * 
+ * @command MI_Inventory_State
+ * @text Инвентарь: состояние
+ * @desc Установить состояние инвентаря (активировать или отключить)
+ * 
+ * @arg state
+ * @text Активен?
+ * @desc ВКЛ. и можно будет октрывать инвентарь. ВЫКЛ. - инвентарь не будет открываться
+ * @type boolean
+ * @default true
+ * 
+ * @command MI_Button_Move
+ * @text Кнопка: Позиция
+ * @desc Изменить позицию кнопки открытия инвентаря на экране
+ * 
+ * @arg X
+ * @desc В пикселях
+ * @type number
+ * @default 0
+ * 
+ * @arg Y
+ * @desc В пикселях
+ * @type number
+ * @default 0
+ * 
+ * @command MI_Button_Visibility
+ * @text Кнопка: Видимость
+ * @desc Изменить видимость кнопки открытия инвентаря на экране
+ * 
+ * @arg state
+ * @text Видима?
+ * @desc
+ * @type boolean
+ * @default true
+ * 
+ * @command MI_Button_State
+ * @text Кнопка: Состояние
+ * @desc Изменить состояние кнопки открытия инвентаря на экране
+ * 
+ * @arg state
+ * @text Активна?
+ * @desc
+ * @type boolean
+ * @default true
+ * 
+ * @command MI_Button_Reset
+ * @text Кнопка: Сброс
+ * @desc Сбросить все настройки кнопки открытия инвентаря до стандартных
+ * 
+ * @command EMPTY_HOLDER
+ * @text ‏
+ * @desc
+ * @default
  */
 /*~struct~LCustomCell:
  * @param iconSize:i
@@ -973,6 +1828,136 @@
  * @default {"w:int":"260","h:int":"160"}
  * @desc Description text zone size
  */
+
+ /*~struct~LUserCategory:
+ * @param name
+ * @text Category
+ * @type string
+ * @default User1
+ * @desc Category name
+ *
+ * @param type
+ * @text Type
+ * @type select
+ * @option items
+ * @option weapons
+ * @option armors
+ * @option note
+ * @default note
+ * @desc For custom category type use note
+ *
+ * @param note
+ * @parent type
+ * @text Note text
+ * @type string
+ * @default user1
+ * @desc Only if Type == note. Add to item\weapon\armor note's: <iCat:VALUE> (VALUE - this parameter value)
+ *
+ * @param icon
+ * @text Icon
+ * @type file
+ * @dir img/pMapInventory/
+ * @require 1
+ * @desc Icon image for category. Optional
+ *
+ * @param iconMargins:struct
+ * @parent icon
+ * @text Margins
+ * @type struct<XY>
+ * @default {"x:int":"0","y:int":"0"}
+ * @desc Icon margins relative button
+ *
+ * @param position:struct
+ * @text Position
+ * @type struct<XY>
+ * @default {"x:int":"0","y:int":"0"}
+ * @desc Category button (icon) position relative inventory header
+
+ * @param unlockedCellsVarId:int
+ * @text Unlocked Cells Count
+ * @type variable
+ * @default 0
+ * @desc Only for Type == note! Variable ID with unlocked cells in this category if you using Limited Cells System
+ */
+
+  /*~struct~LUserCategoryButton:
+ * @param main
+ * @text Image
+ * @type file
+ * @dir img/pMapInventory/
+ * @require 1
+ * @desc Category button image
+ *
+  * @param hovered
+ * @text Hovered
+ * @type file
+ * @dir img/pMapInventory/
+ * @require 1
+ * @desc Category button image when hovered by mouse
+ *
+  * @param selected
+ * @text Selected
+ * @type file
+ * @dir img/pMapInventory/
+ * @require 1
+ * @desc Category button image when selected (active)
+ */
+
+ /*~struct~LExtraOptionButton:
+  @param main:str
+  @text Image
+  @type file
+  @dir img/pMapInventory/
+  @require 1
+  @desc Option button image
+  @default
+
+  @param hover:str
+  @text Hovered
+  @type file
+  @dir img/pMapInventory/
+  @require 1
+  @desc Option button image when hovered by mouse
+
+  @param disabled:str
+  @text Disabled
+  @type file
+  @dir img/pMapInventory/
+  @require 1
+  @desc Option button image when disabled
+*/
+
+/*~struct~LExtraOption:
+  @param title:str
+  @text Title
+  @desc You can see this text in inventory window when hover option button
+  @default My Option
+
+  @param margins:s
+  @text Offset
+  @type struct<XY>
+  @desc Offset relative inventory window
+  @default {}
+
+  @param images:s
+  @text Images
+  @type struct<LExtraOptionButton> 
+  @desc Button state images
+  @default {} 
+
+  @param commonEvent:i
+  @text Common Event
+  @type common_event 
+  @desc Starts this common event when click on option
+  @default 0
+
+  @param isEnabled:str
+  @text Condition
+  @desc Script call, if return false - button will be DISABLED. Leave empty - always enabled
+  @default 
+*/
+
+
 var Imported = Imported || {};
 Imported.PKD_MapInventory = true;
 
@@ -990,7 +1975,7 @@ PKD_MI.warning = function(warnMsg, error) {
     }
 };
 
-PKD_MI.Version = 210; // 2.1
+PKD_MI.Version = 230; // 2.3
 
 DataManager._databaseFiles.push({
     name: '$PKD_MapInventorySettings',
@@ -1032,7 +2017,23 @@ PKD_MI.getUIMapChestSettings = function () {
     return $PKD_MapChestSettings;
 };
 
-// Generated by CoffeeScript 2.5.1
+
+/*
+# ==========================================================================
+# ==========================================================================
+#
+#   EMBEDDED PHEONIX KAGEDESU PLUGINS CORE LIBRARY
+#   (This plugin may not use the entire code of this library)
+#
+# ==========================================================================
+# ==========================================================================
+ * 
+ * 
+ */
+
+
+
+// Generated by CoffeeScript 2.6.1
 // ==========================================================================
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ KDCore.coffee
@@ -1041,17 +2042,33 @@ PKD_MI.getUIMapChestSettings = function () {
 // * LIBRARY WITH MZ AND MZ SUPPORT
 //! {OUTER FILE}
 
-//?rev 18.09.21
+//?rev 21.06.22
 var KDCore;
+
+window.Imported = window.Imported || {};
+
+Imported.KDCore = true;
 
 KDCore = KDCore || {};
 
-// * Двузначные числа нельзя в версии, сравнение идёт по первой цифре поулчается
-KDCore._fileVersion = '2.6';
+// * Двузначные числа нельзя в версии, сравнение идёт по первой цифре поулчается (3.43 - нельзя, можно 3.4.3)
+//%[МЕНЯТЬ ПРИ ИЗМЕНЕНИИ]
+KDCore._fileVersion = '2.9.2';
 
-if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
+// * Методы и библиотеки данной версии
+KDCore._loader = 'loader_' + KDCore._fileVersion;
+
+KDCore[KDCore._loader] = [];
+
+// * Добавить библиотеку на загрузку
+KDCore.registerLibraryToLoad = function(lib) {
+  return KDCore[KDCore._loader].push(lib);
+};
+
+if ((KDCore.Version != null) && KDCore.Version >= KDCore._fileVersion) {
   // * ПРОПУСКАЕМ ЗАГРУЗКУ, так как уже загруженна более новая
-  console.log('XDev KDCore ' + KDCore._fileVersion + ' skipped by new version');
+  console.log('XDev KDCore ' + KDCore._fileVersion + ' skipped by new or exists version');
+  KDCore._requireLoadLibrary = false;
 } else {
   KDCore.Version = KDCore._fileVersion;
   KDCore.LIBS = KDCore.LIBS || {};
@@ -1059,624 +2076,1498 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     return this.LIBS[library.name] = library;
   };
   window.KDCore = KDCore;
-  console.warn("XDev KDCore is loaded " + KDCore.Version);
-  (function() {
-    var BitmapSrc, Color, DevLog, Point, SDK, __TMP_LOGS__, ___Sprite_alias_Move_KDCORE_2, __alias_Bitmap_blt_kdCore, __alias_Bitmap_fillAll, i, l, m, o;
-    // * Array Extension
-    //------------------------------------------------------------------------------
-    Array.prototype.delete = function() {
-      var L, a, ax, what;
-      what = void 0;
-      a = arguments;
-      L = a.length;
-      ax = void 0;
-      while (L && this.length) {
-        what = a[--L];
-        while ((ax = this.indexOf(what)) !== -1) {
-          this.splice(ax, 1);
+  // * ТРЕБУЕТСЯ ЗАГРУЗКА БИБЛИОТЕК
+  KDCore._requireLoadLibrary = true;
+}
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  Array.prototype.delete = function() {
+    var L, a, ax, what;
+    what = void 0;
+    a = arguments;
+    L = a.length;
+    ax = void 0;
+    while (L && this.length) {
+      what = a[--L];
+      while ((ax = this.indexOf(what)) !== -1) {
+        this.splice(ax, 1);
+      }
+    }
+    return this;
+  };
+  Array.prototype.max = function() {
+    return Math.max.apply(null, this);
+  };
+  Array.prototype.min = function() {
+    return Math.min.apply(null, this);
+  };
+  Array.prototype.sample = function() {
+    if (this.length === 0) {
+      return [];
+    }
+    return this[KDCore.SDK.rand(0, this.length - 1)];
+  };
+  Array.prototype.first = function() {
+    return this[0];
+  };
+  Array.prototype.last = function() {
+    return this[this.length - 1];
+  };
+  Array.prototype.shuffle = function() {
+    var k, n, v;
+    n = this.length;
+    while (n > 1) {
+      n--;
+      k = KDCore.SDK.rand(0, n + 1);
+      v = this[k];
+      this[k] = this[n];
+      this[n] = v;
+    }
+  };
+  Array.prototype.count = function() {
+    return this.length;
+  };
+  Array.prototype.isEmpty = function() {
+    return this.length === 0;
+  };
+  // * Ищет элемент, у которого поле ID == id
+  Array.prototype.getById = function(id) {
+    return this.getByField('id', id);
+  };
+  // * Ищет элемент, у которого поле FIELD (имя поля) == value
+  return Array.prototype.getByField = function(field, value) {
+    var e;
+    try {
+      return this.find(function(item) {
+        return item[field] === value;
+      });
+    } catch (error) {
+      e = error;
+      console.warn(e);
+      return null;
+    }
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  Number.prototype.do = function(method) {
+    return KDCore.SDK.times(this, method);
+  };
+  Number.prototype.clamp = function(min, max) {
+    return Math.min(Math.max(this, min), max);
+  };
+  return Number.prototype.any = function(number) {
+    return (number != null) && number > 0;
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  String.prototype.toCss = function() {
+    return KDCore.Color.FromHex(this).CSS;
+  };
+  String.prototype.toCSS = function() {
+    return this.toCss();
+  };
+  String.prototype.isEmpty = function() {
+    return this.length === 0 || !this.trim();
+  };
+  String.isNullOrEmpty = function(str) {
+    if (str != null) {
+      return str.toString().isEmpty();
+    } else {
+      return true;
+    }
+  };
+  String.any = function(str) {
+    return !String.isNullOrEmpty(str);
+  };
+  return String.prototype.replaceAll = function(search, replacement) {
+    var target;
+    target = this;
+    return target.split(search).join(replacement);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  KDCore.isMV = function() {
+    return Utils.RPGMAKER_NAME.contains("MV");
+  };
+  KDCore.isMZ = function() {
+    return !KDCore.isMV();
+  };
+  KDCore.warning = function(msg, error) {
+    if (msg != null) {
+      console.warn(msg);
+    }
+    if (error != null) {
+      console.warn(error);
+    }
+  };
+  KDCore.makeid = function(length) {
+    var characters, charactersLength, i, result;
+    result = '';
+    characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    charactersLength = characters.length;
+    i = 0;
+    while (i < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      i++;
+    }
+    return result;
+  };
+  return KDCore.makeId = function() {
+    return KDCore.makeid(...arguments);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var SDK;
+  //?[DEPRECATED]
+  // * SDK
+  //------------------------------------------------------------------------------
+  SDK = function() {
+    throw new Error('This is a static class');
+  };
+  SDK.rand = function(min, max) {
+    return Math.round(Math.random() * (max - min)) + min;
+  };
+  SDK.setConstantToObject = function(object, constantName, constantValue) {
+    object[constantName] = constantValue;
+    if (typeof object[constantName] === 'object') {
+      Object.freeze(object[constantName]);
+    }
+    Object.defineProperty(object, constantName, {
+      writable: false
+    });
+  };
+  SDK.convertBitmapToBase64Data = function(bitmap) {
+    return bitmap._canvas.toDataURL('image/png');
+  };
+  SDK.times = function(times, method) {
+    var i, results;
+    i = 0;
+    results = [];
+    while (i < times) {
+      method(i);
+      results.push(i++);
+    }
+    return results;
+  };
+  SDK.toGlobalCoord = function(layer, coordSymbol = 'x') {
+    var node, t;
+    t = layer[coordSymbol];
+    node = layer;
+    while (node) {
+      t -= node[coordSymbol];
+      node = node.parent;
+    }
+    return (t * -1) + layer[coordSymbol];
+  };
+  SDK.canvasToLocalX = function(layer, x) {
+    while (layer) {
+      x -= layer.x;
+      layer = layer.parent;
+    }
+    return x;
+  };
+  SDK.canvasToLocalY = function(layer, y) {
+    while (layer) {
+      y -= layer.y;
+      layer = layer.parent;
+    }
+    return y;
+  };
+  SDK.isInt = function(n) {
+    return Number(n) === n && n % 1 === 0;
+  };
+  SDK.isFloat = function(n) {
+    return Number(n) === n && n % 1 !== 0;
+  };
+  SDK.checkSwitch = function(switchValue) {
+    if (switchValue === 'A' || switchValue === 'B' || switchValue === 'C' || switchValue === 'D') {
+      return true;
+    }
+    return false;
+  };
+  SDK.toNumber = function(string, none = 0) {
+    var number;
+    if (string == null) {
+      return none;
+    }
+    number = Number(string);
+    if (isNaN(number)) {
+      return none;
+    }
+    return number;
+  };
+  SDK.isString = function(value) {
+    return typeof value === "string";
+  };
+  SDK.isArray = function(value) {
+    return Array.isArray(value);
+  };
+  //@[EXTEND]
+  return KDCore.SDK = SDK;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var __alias_Bitmap_blt_kdCore, __alias_Bitmap_fillAll_kdCore;
+  //@[ALIAS]
+  __alias_Bitmap_fillAll_kdCore = Bitmap.prototype.fillAll;
+  Bitmap.prototype.fillAll = function(color) {
+    if (color instanceof KDCore.Color) {
+      return this.fillRect(0, 0, this.width, this.height, color.CSS);
+    } else {
+      return __alias_Bitmap_fillAll_kdCore.call(this, color);
+    }
+  };
+  //@[ALIAS]
+  __alias_Bitmap_blt_kdCore = Bitmap.prototype.blt;
+  Bitmap.prototype.blt = function(source, sx, sy, sw, sh, dx, dy, dw, dh) {
+    if (this._needModBltDWH > 0) {
+      dh = dw = this._needModBltDWH;
+      __alias_Bitmap_blt_kdCore.call(this, source, sx, sy, sw, sh, dx, dy, dw, dh);
+      this._needModBltDWH = null;
+    } else {
+      __alias_Bitmap_blt_kdCore.call(this, ...arguments);
+    }
+  };
+  Bitmap.prototype.drawIcon = function(x, y, icon, size = 32) {
+    var bitmap;
+    bitmap = null;
+    if (icon instanceof Bitmap) {
+      bitmap = icon;
+    } else {
+      bitmap = KDCore.BitmapSrc.LoadFromIconIndex(icon).bitmap;
+    }
+    return this.drawOnMe(bitmap, x, y, size, size);
+  };
+  Bitmap.prototype.drawOnMe = function(bitmap, x = 0, y = 0, sw = 0, sh = 0) {
+    if (sw <= 0) {
+      sw = bitmap.width;
+    }
+    if (sh <= 0) {
+      sh = bitmap.height;
+    }
+    this.blt(bitmap, 0, 0, bitmap.width, bitmap.height, x, y, sw, sh);
+  };
+  //TODO: Не работает?
+  Bitmap.prototype.drawInMe = function(bitmap) {
+    return Bitmap.prototype.drawOnMe(bitmap, 0, 0, this.width, this.height);
+  };
+  return Bitmap.prototype.drawTextFull = function(text, position = 'center') {
+    return this.drawText(text, 0, 0, this.width, this.height, position);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+//╒═════════════════════════════════════════════════════════════════════════╛
+// ■ Game_CharacterBase.coffee
+//╒═════════════════════════════════════════════════════════════════════════╛
+//---------------------------------------------------------------------------
+(function() {
+  var _;
+  //@[DEFINES]
+  _ = Game_CharacterBase.prototype;
+  // * Нахожусь ли Я в точке по диагонале (рядом), относительно char
+  _.kdInDiagonalPointRelativeTo = function(char) {
+    var e, x, y;
+    try {
+      if (char == null) {
+        return false;
+      }
+      ({x, y} = char);
+      if (x === this.x - 1 && ((y === this.y - 1) || (y === this.y + 1))) {
+        return true; // * left up or down
+      }
+      if (x === this.x + 1 && (y === this.y - 1 || y === this.y + 1)) {
+        return true; // * right up or down
+      }
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+    }
+    return false;
+  };
+})();
+
+// ■ END Game_CharacterBase.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var _input_onKeyDown, _input_onKeyUp, i, j, k, l;
+  Input.KeyMapperPKD = {};
+//Numbers
+  for (i = j = 48; j <= 57; i = ++j) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i);
+  }
+//Letters Upper
+  for (i = k = 65; k <= 90; i = ++k) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
+  }
+//Letters Lower (for key code events)
+  for (i = l = 97; l <= 122; i = ++l) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
+  }
+  
+  //@[ALIAS]
+  _input_onKeyDown = Input._onKeyDown;
+  Input._onKeyDown = function(event) {
+    _input_onKeyDown.call(this, event);
+    if (Input.keyMapper[event.keyCode]) {
+      return;
+    }
+    Input._setStateWithMapperPKD(event.keyCode);
+  };
+  //@[ALIAS]
+  _input_onKeyUp = Input._onKeyUp;
+  Input._onKeyUp = function(event) {
+    _input_onKeyUp.call(this, event);
+    if (Input.keyMapper[event.keyCode]) {
+      return;
+    }
+    Input._setStateWithMapperPKD(event.keyCode, false);
+  };
+  //?NEW
+  Input._setStateWithMapperPKD = function(keyCode, state = true) {
+    var symbol;
+    symbol = Input.KeyMapperPKD[keyCode];
+    if (symbol != null) {
+      return this._currentState[symbol] = state;
+    }
+  };
+  //?NEW
+  Input.isCancel = function() {
+    return Input.isTriggered('cancel') || TouchInput.isCancelled();
+  };
+  //?NEW
+  return TouchInput.toPoint = function() {
+    return new KDCore.Point(TouchInput.x, TouchInput.y);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  PluginManager.getPluginParametersByRoot = function(rootName) {
+    var pluginParameters, property;
+    for (property in this._parameters) {
+      if (this._parameters.hasOwnProperty(property)) {
+        pluginParameters = this._parameters[property];
+        if (PluginManager.isPluginParametersContentKey(pluginParameters, rootName)) {
+          return pluginParameters;
         }
       }
-      return this;
-    };
-    Array.prototype.max = function() {
-      return Math.max.apply(null, this);
-    };
-    Array.prototype.min = function() {
-      return Math.min.apply(null, this);
-    };
-    Array.prototype.sample = function() {
-      if (this.length === 0) {
-        return [];
+    }
+    return PluginManager.parameters(rootName);
+  };
+  return PluginManager.isPluginParametersContentKey = function(pluginParameters, key) {
+    return pluginParameters[key] != null;
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var ___Sprite_alias_Move_KDCORE_2;
+  Sprite.prototype.moveToCenter = function(dx = 0, dy = 0) {
+    return this.move(-this.bitmap.width / 2 + dx, -this.bitmap.height / 2 + dy);
+  };
+  Sprite.prototype.setStaticAnchor = function(floatX = 1, floatY = 1) {
+    this.x -= Math.round(this.width * floatX);
+    this.y -= Math.round(this.height * floatY);
+  };
+  Sprite.prototype.moveToParentCenter = function() {
+    if (!this.parent) {
+      return;
+    }
+    return this.move(this.parent.width / 2, this.parent.height / 2);
+  };
+  ___Sprite_alias_Move_KDCORE_2 = Sprite.prototype.move;
+  Sprite.prototype.move = function(x, y) {
+    if (x instanceof Array) {
+      return ___Sprite_alias_Move_KDCORE_2.call(this, x[0], x[1]);
+    } else if (x instanceof KDCore.Point || ((x != null ? x.x : void 0) != null)) {
+      return ___Sprite_alias_Move_KDCORE_2.call(this, x.x, x.y);
+    } else if ((x != null) && (x._x != null)) {
+      return ___Sprite_alias_Move_KDCORE_2.call(this, x._x, x._y);
+    } else {
+      return ___Sprite_alias_Move_KDCORE_2.call(this, x, y);
+    }
+  };
+  Sprite.prototype.isContainsPoint = function(point) {
+    var rect, rx, ry;
+    if (this.width === 0 || this.height === 0) {
+      return false;
+    }
+    rx = KDCore.SDK.toGlobalCoord(this, 'x');
+    ry = KDCore.SDK.toGlobalCoord(this, 'y');
+    rect = this._getProperFullRect(rx, ry);
+    return rect.contains(point.x, point.y);
+  };
+  // * Возвращает Rect с учётом Scale и Anchor спрайта
+  Sprite.prototype._getProperFullRect = function(rx, ry) {
+    var height, width, x, y;
+    width = this.width * Math.abs(this.scale.x);
+    height = this.height * Math.abs(this.scale.y);
+    x = rx - this.anchor.x * width;
+    y = ry - this.anchor.y * height;
+    if (this.anchor.x === 0 && this.scale.x < 0) {
+      x += this.width * this.scale.x;
+    }
+    if (this.anchor.y === 0 && this.scale.y < 0) {
+      y += this.height * this.scale.y;
+    }
+    return new PIXI.Rectangle(x, y, width, height);
+  };
+  Sprite.prototype.fillAll = function(color) {
+    if (color != null) {
+      return this.bitmap.fillAll(color);
+    } else {
+      return this.fillAll(KDCore.Color.WHITE);
+    }
+  };
+  return Sprite.prototype.removeFromParent = function() {
+    if (this.parent != null) {
+      return this.parent.removeChild(this);
+    }
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  return TouchInput.toMapPoint = function() {
+    return this.toPoint().convertToMap();
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  KDCore.Utils = KDCore.Utils || {};
+  return (function() {
+    var _;
+    _ = KDCore.Utils;
+    _.getJDataById = function(id, source) {
+      var d, j, len;
+      for (j = 0, len = source.length; j < len; j++) {
+        d = source[j];
+        if (d.id === id) {
+          return d;
+        }
       }
-      return this[SDK.rand(0, this.length - 1)];
+      return null;
     };
-    Array.prototype.first = function() {
-      return this[0];
+    _.hasMeta = function(symbol, obj) {
+      return (obj.meta != null) && (obj.meta[symbol] != null);
     };
-    Array.prototype.last = function() {
-      return this[this.length - 1];
-    };
-    Array.prototype.shuffle = function() {
-      var k, n, v;
-      n = this.length;
-      while (n > 1) {
-        n--;
-        k = SDK.rand(0, n + 1);
-        v = this[k];
-        this[k] = this[n];
-        this[n] = v;
+    _.getValueFromMeta = function(symbol, obj) {
+      if (!_.hasMeta(symbol, obj)) {
+        return null;
       }
+      return obj.meta[symbol];
     };
-    Array.prototype.count = function() {
-      return this.length;
+    _.getNumberFromMeta = function(symbol, obj) {
+      var value;
+      if (!_.hasMeta(symbol, obj)) {
+        return null;
+      }
+      if (obj.meta[symbol] === true) {
+        return 0;
+      } else {
+        value = KDCore.SDK.toNumber(obj.meta[symbol], 0);
+      }
+      return value;
     };
-    Array.prototype.isEmpty = function() {
-      return this.length === 0;
-    };
-    // * Ищет элемент, у которого поле ID == id
-    Array.prototype.getById = function(id) {
-      return this.getByField('id', id);
-    };
-    // * Ищет элемент, у которого поле FIELD (имя поля) == value
-    Array.prototype.getByField = function(field, value) {
-      var e;
+    _.isSceneMap = function() {
       try {
-        return this.find(function(item) {
-          return item[field] === value;
-        });
-      } catch (error1) {
-        e = error1;
+        return !SceneManager.isSceneChanging() && SceneManager._scene instanceof Scene_Map;
+      } catch (error) {
+        return false;
+      }
+    };
+    _.isSceneBattle = function() {
+      try {
+        return !SceneManager.isSceneChanging() && SceneManager._scene instanceof Scene_Battle;
+      } catch (error) {
+        return false;
+      }
+    };
+    _.getEventCommentValue = function(commentCode, list) {
+      var comment, e, i, item;
+      try {
+        if (list && list.length > 1) {
+          i = 0;
+          while (i < list.length) {
+            item = list[i++];
+            if (!item) {
+              continue;
+            }
+            if (item.code === 108) {
+              comment = item.parameters[0];
+              if (comment.contains(commentCode)) {
+                return comment;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        e = error;
         console.warn(e);
+      }
+      return null;
+    };
+    _.getEventCommentValueArray = function(commentCode, list) {
+      var comment, comments, e, i, item;
+      try {
+        comments = [];
+        if (list && list.length > 1) {
+          i = 0;
+          while (i < list.length) {
+            item = list[i++];
+            if (!item) {
+              continue;
+            }
+            if (item.code === 108) {
+              comment = item.parameters[0];
+              if (comment.contains(commentCode)) {
+                comments.push(comment);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        e = error;
+        console.warn(e);
+      }
+      return comments;
+    };
+    _.getPositionPointFromJSON = function(jsonSettings) {
+      return _.convertPositionPointFromJSON(jsonSettings.position);
+    };
+    _.convertPositionPointFromJSON = function(position) {
+      var e, x, y;
+      try {
+        x = position[0];
+        y = position[1];
+        if (!KDCore.SDK.isInt(x)) {
+          x = eval(x);
+        }
+        if (!KDCore.SDK.isInt(y)) {
+          y = eval(y);
+        }
+        return new KDCore.Point(x, y);
+      } catch (error) {
+        e = error;
+        console.warn('Utils.getPositionPointFromJSON', e);
+        return KDCore.Point.Empty;
+      }
+    };
+    _.jsonPos = function(jsonPosition) {
+      return _.convertPositionPointFromJSON(jsonPosition);
+    };
+    _.jsonPosXY = function(jsonPosition) {
+      var e, x, y;
+      try {
+        ({x, y} = jsonPosition);
+        return new KDCore.Point(eval(x), eval(y));
+      } catch (error) {
+        e = error;
+        console.warn('Utils.jsonPosXY', e);
+        return KDCore.Point.Empty;
+      }
+    };
+    _.getVar = function(id) {
+      return $gameVariables.value(id);
+    };
+    _.setVar = function(id, value) {
+      return $gameVariables.setValue(id, value);
+    };
+    _.addToVar = function(id, value) {
+      var prevVal;
+      prevVal = _.getVar(id);
+      return _.setVar(id, prevVal + value);
+    };
+    _.playSE = function(seFileName, pitch = 100, volume = 100) {
+      var sound;
+      if (seFileName == null) {
+        return;
+      }
+      if (seFileName === "") {
+        return;
+      }
+      sound = {
+        name: seFileName,
+        pan: 0,
+        pitch: pitch,
+        volume: volume
+      };
+      AudioManager.playStaticSe(sound);
+    };
+    _.getItemTypeId = function(item) {
+      if (DataManager.isWeapon(item)) {
+        return 1;
+      } else if (DataManager.isArmor(item)) {
+        return 2;
+      }
+      return 0;
+    };
+    _.getItemByType = function(itemId, typeId) {
+      var data, e;
+      try {
+        if ((typeId != null) && !isFinite(typeId) && KDCore.SDK.isString(typeId) && String.any(typeId)) {
+          if (typeId[0] === "w") {
+            typeId = 1;
+          } else if (typeId[0] === "a") {
+            typeId = 2;
+          } else {
+            typeId = 0;
+          }
+        }
+        data = [$dataItems, $dataWeapons, $dataArmors];
+        return data[typeId][itemId];
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
         return null;
       }
     };
-    // * Number Extension
-    //------------------------------------------------------------------------------
-    Number.prototype.do = function(method) {
-      return SDK.times(this, method);
-    };
-    Number.prototype.clamp = function(min, max) {
-      return Math.min(Math.max(this, min), max);
-    };
-    Number.prototype.any = function(number) {
-      return (number != null) && number > 0;
-    };
-    // * String Extension
-    //------------------------------------------------------------------------------
-    String.prototype.toCss = function() {
-      return KDCore.Color.FromHex(this).CSS;
-    };
-    String.prototype.toCSS = function() {
-      return this.toCss();
-    };
-    String.prototype.isEmpty = function() {
-      return this.length === 0 || !this.trim();
-    };
-    String.isNullOrEmpty = function(str) {
-      return (str == null) || str.isEmpty();
-    };
-    String.any = function(str) {
-      return !String.isNullOrEmpty(str);
-    };
-    String.prototype.replaceAll = function(search, replacement) {
-      var target;
-      target = this;
-      return target.split(search).join(replacement);
-    };
-    // * Sprite Extension
-    //------------------------------------------------------------------------------
-    Sprite.prototype.moveToCenter = function(dx = 0, dy = 0) {
-      return this.move(-this.bitmap.width / 2 + dx, -this.bitmap.height / 2 + dy);
-    };
-    Sprite.prototype.setStaticAnchor = function(floatX = 1, floatY = 1) {
-      this.x -= Math.round(this.width * floatX);
-      this.y -= Math.round(this.height * floatY);
-    };
-    Sprite.prototype.moveToParentCenter = function() {
-      if (!this.parent) {
+    _.loadFont = function(name) {
+      if (!KDCore.isMZ()) {
         return;
       }
-      return this.move(this.parent.width / 2, this.parent.height / 2);
+      if (String.isNullOrEmpty(name)) {
+        return;
+      }
+      if (FontManager._states[name] != null) {
+        return;
+      }
+      FontManager.load(name, name + ".ttf");
     };
-    ___Sprite_alias_Move_KDCORE_2 = Sprite.prototype.move;
-    Sprite.prototype.move = function(x, y) {
-      if (x instanceof Array) {
-        return ___Sprite_alias_Move_KDCORE_2.call(this, x[0], x[1]);
-      } else if (x instanceof KDCore.Point || ((x != null ? x.x : void 0) != null)) {
-        return ___Sprite_alias_Move_KDCORE_2.call(this, x.x, x.y);
-      } else if ((x != null) && (x._x != null)) {
-        return ___Sprite_alias_Move_KDCORE_2.call(this, x._x, x._y);
-      } else {
-        return ___Sprite_alias_Move_KDCORE_2.call(this, x, y);
+    _.convertTimeShort = function(seconds) {
+      var e;
+      try {
+        if (seconds > 59) {
+          return Math.floor(seconds / 60) + 'm';
+        } else {
+          return seconds;
+        }
+      } catch (error) {
+        e = error;
+        console.warn(e);
+        return seconds;
       }
     };
-    Sprite.prototype.isContainsPoint = function(point) {
-      var rect, rx, ry;
-      if (this.width === 0 || this.height === 0) {
+    _.isPointInScreen = function(point, margin = 10) {
+      var maxH, maxW, screenMargin, x, y;
+      ({x, y} = point);
+      maxW = Graphics.width;
+      maxH = Graphics.height;
+      // * Граница от краёв экрана
+      screenMargin = margin;
+      if (x < screenMargin) {
         return false;
       }
-      rx = KDCore.SDK.toGlobalCoord(this, 'x');
-      ry = KDCore.SDK.toGlobalCoord(this, 'y');
-      rect = this._getProperFullRect(rx, ry);
-      return rect.contains(point.x, point.y);
-    };
-    // * Возвращает Rect с учётом Scale и Anchor спрайта
-    Sprite.prototype._getProperFullRect = function(rx, ry) {
-      var height, width, x, y;
-      width = this.width * Math.abs(this.scale.x);
-      height = this.height * Math.abs(this.scale.y);
-      x = rx - this.anchor.x * width;
-      y = ry - this.anchor.y * height;
-      if (this.anchor.x === 0 && this.scale.x < 0) {
-        x += this.width * this.scale.x;
+      if (y < screenMargin) {
+        return false;
       }
-      if (this.anchor.y === 0 && this.scale.y < 0) {
-        y += this.height * this.scale.y;
+      if (x > (maxW - screenMargin)) {
+        return false;
       }
-      return new PIXI.Rectangle(x, y, width, height);
-    };
-    Sprite.prototype.fillAll = function(color) {
-      if (color != null) {
-        return this.bitmap.fillAll(color);
-      } else {
-        return this.fillAll(KDCore.Color.WHITE);
+      if (y > (maxH - screenMargin)) {
+        return false;
       }
+      return true;
     };
-    Sprite.prototype.removeFromParent = function() {
-      if (this.parent != null) {
-        return this.parent.removeChild(this);
-      }
-    };
-    // * Bitmap Extension
-    //------------------------------------------------------------------------------
-    __alias_Bitmap_fillAll = Bitmap.prototype.fillAll;
-    Bitmap.prototype.fillAll = function(color) {
-      if (color instanceof KDCore.Color) {
-        return this.fillRect(0, 0, this.width, this.height, color.CSS);
-      } else {
-        return __alias_Bitmap_fillAll.call(this, color);
-      }
-    };
-    __alias_Bitmap_blt_kdCore = Bitmap.prototype.blt;
-    Bitmap.prototype.blt = function(source, sx, sy, sw, sh, dx, dy, dw, dh) {
-      if (this._needModBltDWH > 0) {
-        dh = dw = this._needModBltDWH;
-        __alias_Bitmap_blt_kdCore.call(this, source, sx, sy, sw, sh, dx, dy, dw, dh);
-        this._needModBltDWH = null;
-      } else {
-        __alias_Bitmap_blt_kdCore.call(this, ...arguments);
-      }
-    };
-    Bitmap.prototype.drawIcon = function(x, y, icon, size = 32) {
-      var bitmap;
-      bitmap = null;
-      if (icon instanceof Bitmap) {
-        bitmap = icon;
-      } else {
-        bitmap = BitmapSrc.LoadFromIconIndex(icon).bitmap;
-      }
-      return this.drawOnMe(bitmap, x, y, size, size);
-    };
-    Bitmap.prototype.drawOnMe = function(bitmap, x = 0, y = 0, sw = 0, sh = 0) {
-      if (sw <= 0) {
-        sw = bitmap.width;
-      }
-      if (sh <= 0) {
-        sh = bitmap.height;
-      }
-      this.blt(bitmap, 0, 0, bitmap.width, bitmap.height, x, y, sw, sh);
-    };
-    Bitmap.prototype.drawInMe = function(bitmap) {
-      return Bitmap.prototype.drawOnMe(bitmap, 0, 0, this.width, this.height);
-    };
-    Bitmap.prototype.drawTextFull = function(text, position = 'center') {
-      return this.drawText(text, 0, 0, this.width, this.height, position);
-    };
-    // * Input Extension
-    //------------------------------------------------------------------------------
-    Input.KeyMapperPKD = {};
-//Numbers
-    for (i = l = 48; l <= 57; i = ++l) {
-      Input.KeyMapperPKD[i] = String.fromCharCode(i);
-    }
-//Letters Upper
-    for (i = m = 65; m <= 90; i = ++m) {
-      Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
-    }
-//Letters Lower (for key code events)
-    for (i = o = 97; o <= 122; i = ++o) {
-      Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
-    }
-    (function() {
-      var _input_onKeyDown, _input_onKeyUp;
-      
-      //@[ALIAS]
-      _input_onKeyDown = Input._onKeyDown;
-      Input._onKeyDown = function(event) {
-        _input_onKeyDown.call(this, event);
-        if (Input.keyMapper[event.keyCode]) {
-          return;
-        }
-        Input._setStateWithMapperPKD(event.keyCode);
-      };
-      //@[ALIAS]
-      _input_onKeyUp = Input._onKeyUp;
-      Input._onKeyUp = function(event) {
-        _input_onKeyUp.call(this, event);
-        if (Input.keyMapper[event.keyCode]) {
-          return;
-        }
-        Input._setStateWithMapperPKD(event.keyCode, false);
-      };
-      //?NEW
-      Input._setStateWithMapperPKD = function(keyCode, state = true) {
-        var symbol;
-        symbol = Input.KeyMapperPKD[keyCode];
-        if (symbol != null) {
-          return this._currentState[symbol] = state;
-        }
-      };
-      //?NEW
-      Input.isCancel = function() {
-        return Input.isTriggered('cancel') || TouchInput.isCancelled();
-      };
-      //?NEW
-      TouchInput.toPoint = function() {
-        return new KDCore.Point(TouchInput.x, TouchInput.y);
-      };
-    })();
-    (function() {      // * Input Extension: KDGamepad
-      //------------------------------------------------------------------------------
-      // * Поддержка расширенного управления через геймпад (свой модуль)
-      var ALIAS___updateGamepadState, _;
-      //@[DEFINES]
-      _ = Input;
-      // * Активировать работу модуля KDGamepad
-      _.activateExtendedKDGamepad = function() {
-        return _._kdIsGamepadExtended = true;
-      };
-      //@[ALIAS]
-      ALIAS___updateGamepadState = _._updateGamepadState;
-      _._updateGamepadState = function(gamepad) {
-        if (Input._kdIsGamepadExtended === true) {
-          KDGamepad.update();
-        }
-        if ((typeof $gameTemp !== "undefined" && $gameTemp !== null ? $gameTemp.__kdgpStopDefaultGamepad : void 0) === true) {
-          return;
-        }
-        // * Режим перемещения без DPad
-        // * В оригинале игрок также ходит по DPad клавишам, что может быть не удобно
-        // * например при работе с инвентарём
-        if (KDGamepad.isNoDPadMoving()) {
-          if (KDGamepad.isDPadAny()) {
-            Input.clear();
-            return;
-          }
-        }
-        ALIAS___updateGamepadState.call(this, gamepad);
-      };
-      window.KDGamepad = function() {
-        return new Error("This is static class");
-      };
-      window.addEventListener("gamepadconnected", function(event) {
-        var e;
-        try {
-          return KDGamepad.refresh();
-        } catch (error1) {
-          // * Можно напрямую
-          //unless KDGamepad.isExists()
-          //    if event.gamepad? and event.gamepad.mapping == 'standard'
-          //        KDGamepad.init(event.gamepad)
-          e = error1;
-          KDCore.warning(e);
-          return KDGamepad.stop();
-        }
+    // * Ассинхронная загрузка изображения, возвращает bitmap, когда загружен
+    // * Пример использования loadImageAsync(a, b).then(метод)
+    // в метод будет передан bitmap первым аргументом
+    _.loadImageAsync = async function(folder, filename) {
+      var promise;
+      promise = new Promise(function(resolve, reject) {
+        var b;
+        b = ImageManager.loadBitmap("img/" + folder + "/", filename);
+        return b.addLoadListener(function() {
+          return resolve(b);
+        });
       });
-      window.addEventListener("gamepaddisconnected", function(event) {
-        var e;
-        if (!KDGamepad.isExists()) {
-          return;
+      return (await promise);
+    };
+    // * Преобразовать расширенное значение
+    // * Значение может быть X -> X
+    // * "X" -> X (цифра)
+    // * "X,Y,Z,..." -> [X, Y, Z]
+    // * "[X, Y, Z,...]" -> [X, Y, Z]
+    // * "X|V" -> из переменной X
+    // * [Y] -> случайное число из массива (рекурсивно)
+    //@[2.8.1] since
+    _.getEValue = function(value) {
+      var e, items, randomValue, variableId;
+      try {
+        if (value == null) {
+          return null;
         }
-        try {
-          if ((event.gamepad != null) && event.gamepad === KDGamepad.gamepad) {
-            return KDGamepad.stop();
+        if (KDCore.SDK.isString(value)) {
+          if (isFinite(value)) { // * Число представленно строкой
+            return Number(value);
           }
-        } catch (error1) {
-          e = error1;
-          KDCore.warning(e);
-          return KDGamepad.stop();
-        }
-      });
-      KDGamepad.stopDefaultGamepad = function() {
-        $gameTemp.__kdgpStopDefaultGamepad = true;
-      };
-      KDGamepad.resumeDefaultGamepad = function() {
-        $gameTemp.__kdgpStopDefaultGamepad = null;
-      };
-      // * Ссылка на геймпад
-      KDGamepad.gamepad = null;
-      // * Подключён ли Gamepad ?
-      KDGamepad.isExists = function() {
-        return KDGamepad.gamepad != null;
-      };
-      // * Инициализация состояния кнопок
-      // * Этот метод вызывается автоматически из Refresh или при подключении Gamepad
-      KDGamepad.init = function(gamepad) {
-        KDGamepad.gamepad = gamepad;
-        this._isActive = true;
-        this.buttonNames = [
-          'A', // 0
-          'B', // 1
-          'X', // 2
-          'Y', // 3
-          'LB', // 4
-          'RB', // 5
-          'LTrigger', // 6
-          'RTrigger', // 7
-          'Back', // 8
-          'Start', // 9
-          'LStick', // 10
-          'RStick', // 11
-          'dUp', // 12
-          'dDown', // 13
-          'dLeft', // 14
-          'dRight' // 15
-        ];
-        this.reset();
-      };
-      // * Аналог Input.clear
-      KDGamepad.clear = function() {
-        return KDGamepad.reset();
-      };
-      // * Сбросить состояние кнопок
-      KDGamepad.reset = function() {
-        this.leftStick = {
-          x: 0,
-          y: 0
-        };
-        this.rightStick = {
-          x: 0,
-          y: 0
-        };
-        this.buttons = {};
-        this.buttonsPressed = {};
-        this.prevButtons = {};
-      };
-      
-      // * Остановить учёт геймпада
-      KDGamepad.stop = function() {
-        KDGamepad.reset();
-        KDGamepad.gamepad = null;
-      };
-      // * Функция проверки что нажата кнопка на геймпаде
-      KDGamepad._buttonPressed = function(gamepad, index) {
-        var b, e;
-        try {
-          if (!gamepad || !gamepad.buttons || index >= gamepad.buttons.length) {
-            return false;
-          }
-          b = gamepad.buttons[index];
-          if (b == null) {
-            return false;
-          }
-          if (typeof b === 'object') {
-            // * Можно упростить
-            return b.pressed;
-          }
-          return b === 1.0;
-        } catch (error1) {
-          e = error1;
-          KDCore.warning(e);
-          return false;
-        }
-      };
-      // * Каждый кадр (обновление состояний)
-      KDGamepad.update = function() {
-        var e, gp, isDown, len, name, q, ref;
-        if (!KDGamepad.isActive()) {
-          return;
-        }
-        KDGamepad.refresh();
-        if (!KDGamepad.isExists()) {
-          return;
-        }
-        try {
-          gp = KDGamepad.gamepad;
-          ref = this.buttonNames;
-          // * Проверка состояний кнопок
-          for (i = q = 0, len = ref.length; q < len; i = ++q) {
-            name = ref[i];
-            this.buttons[name] = false;
-            isDown = KDGamepad._buttonPressed(gp, i);
-            if (isDown === true) {
-              this.prevButtons[name] = true;
-            } else {
-              // * Срабатываение только при нажал - отпустил
-              if (this.prevButtons[name] === true) {
-                this.buttons[name] = true;
-                this.prevButtons[name] = false;
+          // * Массив представлен строкой (может быть без квадратных скобок)
+          if (value.contains(',') || (value.contains("[") && value.contains("]"))) {
+            value = value.replace("[", "");
+            value = value.replace("]", "");
+            // * Преобразуем в число или строку (например если extended |V)
+            items = value.split(",").map(function(item) {
+              var itemT;
+              itemT = item.trim();
+              if (isFinite(itemT)) {
+                return Number(itemT);
+              } else {
+                return itemT;
               }
-            }
+            });
+            // * Вызываем снова эту функцию, но уже с массивом
+            return KDCore.Utils.getEValue(items);
           }
-          // * Проверка стиков
-          this.leftStick.x = gp.axes[0];
-          this.leftStick.y = gp.axes[1];
-          this.rightStick.x = gp.axes[2];
-          this.rightStick.y = gp.axes[3];
-        } catch (error1) {
-          e = error1;
-          KDCore.warning(e);
-          KDGamepad.stop();
-        }
-      };
-      // * Обновить и проверить состояние Gamepad
-      // * Надо каждый раз это вызывать
-      KDGamepad.refresh = function() {
-        var e, gamepads, gp, isGamepadRefreshed, q, ref;
-        try {
-          isGamepadRefreshed = false;
-          if (navigator.getGamepads) {
-            gamepads = navigator.getGamepads();
-          } else if (navigator.webkitGetGamepads) {
-            gamepads = navigator.webkitGetGamepads();
+          if (value.contains("|V")) {
+            variableId = parseInt(value);
+            return $gameVariables.value(variableId);
           }
-          if (gamepads != null) {
-            for (i = q = 0, ref = gamepads.length; (0 <= ref ? q < ref : q > ref); i = 0 <= ref ? ++q : --q) {
-              gp = gamepads[i];
-              if ((gp != null) && gp.mapping === 'standard') {
-                isGamepadRefreshed = true;
-                if (KDGamepad.buttonNames != null) {
-                  KDGamepad.gamepad = gp;
-                } else {
-                  KDGamepad.init(gp);
-                }
-                break;
-              }
-            }
-          }
-          if (!isGamepadRefreshed) {
-            // * Если не был найден не один gamepad - отключаем систему
-            KDGamepad.stop();
-          }
-        } catch (error1) {
-          e = error1;
-          KDCore.warning(e);
-          KDGamepad.stop();
-        }
-      };
-      // * Любое нажатие кнопки
-      KDGamepad.isKeyAny = function(name) {
-        return KDGamepad.isKey(name) || KDGamepad.isKeyPressed(name);
-      };
-      // * Нажата ли кнопка (trigger нажал - отпустил)
-      KDGamepad.isKey = function(name) {
-        if (!KDGamepad.isExists()) {
-          return false;
-        }
-        if (this.buttons == null) {
-          return false;
-        }
-        return this.buttons[name] === true;
-      };
-      // * Нажата ли кнопка (continues зажата)
-      KDGamepad.isKeyPressed = function(name) {
-        if (!KDGamepad.isExists()) {
-          return false;
-        }
-        if (this.buttons == null) {
-          return false;
-        }
-        return this.prevButtons[name] === true;
-      };
-      KDGamepad.isDPadAny = function() {
-        return KDGamepad.isKeyAny("dLeft") || KDGamepad.isKeyAny("dRight") || KDGamepad.isKeyAny("dUp") || KDGamepad.isKeyAny("dDown");
-      };
-      KDGamepad.isActive = function() {
-        return this._isActive === true;
-      };
-      // * Временно отключить обработку KDGamepad
-      KDGamepad.setActive = function(_isActive) {
-        this._isActive = _isActive;
-        if (KDGamepad.isActive()) {
-          KDGamepad.refresh();
+          return value; // * Просто значение в итоге
+        } else if (KDCore.SDK.isArray(value)) {
+          randomValue = value.sample();
+          return KDCore.Utils.getEValue(randomValue);
         } else {
+          return value;
+        }
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return value;
+      }
+    };
+    //@[2.8.2] since
+    _.isChanceIsGood = function(chance) {
+      var e;
+      try {
+        if (chance > 1) {
+          chance /= 100;
+        }
+        return chance > Math.random();
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return false;
+      }
+    };
+    //@[2.8.2] since
+    //KEY:w:3:1:50 , KEY:i:10:2:1|V
+    //OUTPUT: [GameItem, COUNT]
+    _.parseItemFromConditionStr = function(conditionLine) {
+      var amount, e, itemChance, itemId, parts, typeId;
+      try {
+        if (!conditionLine.contains(":")) {
+          return null;
+        }
+        parts = conditionLine.split(":");
+        typeId = parts[1];
+        itemId = KDCore.Utils.getEValue(parts[2]);
+        amount = KDCore.Utils.getEValue(parts[3]);
+        if (amount <= 0) {
+          return null;
+        }
+        try {
+          itemChance = String.any(parts[4]) ? parts[4] : 100;
+          itemChance = KDCore.Utils.getEValue(itemChance) / 100;
+        } catch (error) {
+          e = error;
+          KDCore.warning(e);
+          itemChance = 0;
+        }
+        if (itemChance <= 0) {
+          return null;
+        }
+        if (KDCore.Utils.isChanceIsGood(itemChance)) {
+          return [KDCore.Utils.getItemByType(itemId, typeId), amount];
+        } else {
+          return null;
+        }
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return null;
+      }
+    };
+  })();
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  return Window_Base.prototype.drawFaceWithCustomSize = function(faceName, faceIndex, x, y, finalSize) {
+    this.contents._needModBltDWH = finalSize;
+    this.drawFace(faceName, faceIndex, x, y);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  return (function() {    // * Input Extension: KDGamepad
+    //------------------------------------------------------------------------------
+    // * Поддержка расширенного управления через геймпад (свой модуль)
+    var ALIAS___updateGamepadState, _;
+    //@[DEFINES]
+    _ = Input;
+    // * Активировать работу модуля KDGamepad
+    _.activateExtendedKDGamepad = function() {
+      return _._kdIsGamepadExtended = true;
+    };
+    //@[ALIAS]
+    ALIAS___updateGamepadState = _._updateGamepadState;
+    _._updateGamepadState = function(gamepad) {
+      if (Input._kdIsGamepadExtended === true) {
+        KDGamepad.update();
+      }
+      if ((typeof $gameTemp !== "undefined" && $gameTemp !== null ? $gameTemp.__kdgpStopDefaultGamepad : void 0) === true) {
+        return;
+      }
+      // * Режим перемещения без DPad
+      // * В оригинале игрок также ходит по DPad клавишам, что может быть не удобно
+      // * например при работе с инвентарём
+      if (KDGamepad.isNoDPadMoving()) {
+        if (KDGamepad.isDPadAny()) {
+          Input.clear();
+          return;
+        }
+      }
+      ALIAS___updateGamepadState.call(this, gamepad);
+    };
+    window.KDGamepad = function() {
+      return new Error("This is static class");
+    };
+    window.addEventListener("gamepadconnected", function(event) {
+      var e;
+      try {
+        return KDGamepad.refresh();
+      } catch (error) {
+        // * Можно напрямую
+        //unless KDGamepad.isExists()
+        //    if event.gamepad? and event.gamepad.mapping == 'standard'
+        //        KDGamepad.init(event.gamepad)
+        e = error;
+        KDCore.warning(e);
+        return KDGamepad.stop();
+      }
+    });
+    window.addEventListener("gamepaddisconnected", function(event) {
+      var e;
+      if (!KDGamepad.isExists()) {
+        return;
+      }
+      try {
+        if ((event.gamepad != null) && event.gamepad === KDGamepad.gamepad) {
+          return KDGamepad.stop();
+        }
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return KDGamepad.stop();
+      }
+    });
+    KDGamepad.stopDefaultGamepad = function() {
+      $gameTemp.__kdgpStopDefaultGamepad = true;
+    };
+    KDGamepad.resumeDefaultGamepad = function() {
+      $gameTemp.__kdgpStopDefaultGamepad = null;
+    };
+    // * Ссылка на геймпад
+    KDGamepad.gamepad = null;
+    // * Подключён ли Gamepad ?
+    KDGamepad.isExists = function() {
+      return KDGamepad.gamepad != null;
+    };
+    // * Инициализация состояния кнопок
+    // * Этот метод вызывается автоматически из Refresh или при подключении Gamepad
+    KDGamepad.init = function(gamepad) {
+      KDGamepad.gamepad = gamepad;
+      this._isActive = true;
+      this.buttonNames = [
+        'A', // 0
+        'B', // 1
+        'X', // 2
+        'Y', // 3
+        'LB', // 4
+        'RB', // 5
+        'LTrigger', // 6
+        'RTrigger', // 7
+        'Back', // 8
+        'Start', // 9
+        'LStick', // 10
+        'RStick', // 11
+        'dUp', // 12
+        'dDown', // 13
+        'dLeft', // 14
+        'dRight' // 15
+      ];
+      this.reset();
+    };
+    // * Аналог Input.clear
+    KDGamepad.clear = function() {
+      return KDGamepad.reset();
+    };
+    // * Сбросить состояние кнопок
+    KDGamepad.reset = function() {
+      this.leftStick = {
+        x: 0,
+        y: 0
+      };
+      this.rightStick = {
+        x: 0,
+        y: 0
+      };
+      this.buttons = {};
+      this.buttonsPressed = {};
+      this.prevButtons = {};
+    };
+    
+    // * Остановить учёт геймпада
+    KDGamepad.stop = function() {
+      KDGamepad.reset();
+      KDGamepad.gamepad = null;
+    };
+    // * Функция проверки что нажата кнопка на геймпаде
+    KDGamepad._buttonPressed = function(gamepad, index) {
+      var b, e;
+      try {
+        if (!gamepad || !gamepad.buttons || index >= gamepad.buttons.length) {
+          return false;
+        }
+        b = gamepad.buttons[index];
+        if (b == null) {
+          return false;
+        }
+        if (typeof b === 'object') {
+          // * Можно упростить
+          return b.pressed;
+        }
+        return b === 1.0;
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return false;
+      }
+    };
+    // * Каждый кадр (обновление состояний)
+    KDGamepad.update = function() {
+      var e, gp, i, isDown, j, len, name, ref;
+      if (!KDGamepad.isActive()) {
+        return;
+      }
+      KDGamepad.refresh();
+      if (!KDGamepad.isExists()) {
+        return;
+      }
+      try {
+        gp = KDGamepad.gamepad;
+        ref = this.buttonNames;
+        // * Проверка состояний кнопок
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          name = ref[i];
+          this.buttons[name] = false;
+          isDown = KDGamepad._buttonPressed(gp, i);
+          if (isDown === true) {
+            this.prevButtons[name] = true;
+          } else {
+            // * Срабатываение только при нажал - отпустил
+            if (this.prevButtons[name] === true) {
+              this.buttons[name] = true;
+              this.prevButtons[name] = false;
+            }
+          }
+        }
+        // * Проверка стиков
+        this.leftStick.x = gp.axes[0];
+        this.leftStick.y = gp.axes[1];
+        this.rightStick.x = gp.axes[2];
+        this.rightStick.y = gp.axes[3];
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        KDGamepad.stop();
+      }
+    };
+    // * Обновить и проверить состояние Gamepad
+    // * Надо каждый раз это вызывать
+    KDGamepad.refresh = function() {
+      var e, gamepads, gp, i, isGamepadRefreshed, j, ref;
+      try {
+        isGamepadRefreshed = false;
+        if (navigator.getGamepads) {
+          gamepads = navigator.getGamepads();
+        } else if (navigator.webkitGetGamepads) {
+          gamepads = navigator.webkitGetGamepads();
+        }
+        if (gamepads != null) {
+          for (i = j = 0, ref = gamepads.length; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
+            gp = gamepads[i];
+            if ((gp != null) && gp.mapping === 'standard') {
+              isGamepadRefreshed = true;
+              if (KDGamepad.buttonNames != null) {
+                KDGamepad.gamepad = gp;
+              } else {
+                KDGamepad.init(gp);
+              }
+              break;
+            }
+          }
+        }
+        if (!isGamepadRefreshed) {
+          // * Если не был найден не один gamepad - отключаем систему
           KDGamepad.stop();
         }
-      };
-      // * Отключить перемещение игрока на DPad
-      KDGamepad.setNoDPadMovingMode = function(_noDpadMoving) {
-        this._noDpadMoving = _noDpadMoving;
-      };
-      return KDGamepad.isNoDPadMoving = function() {
-        return this._noDpadMoving === true;
-      };
-    })();
-    // * Window_Base Extension
-    //------------------------------------------------------------------------------
-    Window_Base.prototype.drawFaceWithCustomSize = function(faceName, faceIndex, x, y, finalSize) {
-      this.contents._needModBltDWH = finalSize;
-      this.drawFace(faceName, faceIndex, x, y);
-    };
-    // * SDK
-    //------------------------------------------------------------------------------
-    SDK = function() {
-      throw new Error('This is a static class');
-    };
-    SDK.rand = function(min, max) {
-      return Math.round(Math.random() * (max - min)) + min;
-    };
-    SDK.setConstantToObject = function(object, constantName, constantValue) {
-      object[constantName] = constantValue;
-      if (typeof object[constantName] === 'object') {
-        Object.freeze(object[constantName]);
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        KDGamepad.stop();
       }
-      Object.defineProperty(object, constantName, {
-        writable: false
-      });
     };
-    SDK.convertBitmapToBase64Data = function(bitmap) {
-      return bitmap._canvas.toDataURL('image/png');
+    // * Любое нажатие кнопки
+    KDGamepad.isKeyAny = function(name) {
+      return KDGamepad.isKey(name) || KDGamepad.isKeyPressed(name);
     };
-    SDK.times = function(times, method) {
-      var results;
-      i = 0;
-      results = [];
-      while (i < times) {
-        method(i);
-        results.push(i++);
+    // * Нажата ли кнопка (trigger нажал - отпустил)
+    KDGamepad.isKey = function(name) {
+      if (!KDGamepad.isExists()) {
+        return false;
       }
-      return results;
-    };
-    SDK.toGlobalCoord = function(layer, coordSymbol = 'x') {
-      var node, t;
-      t = layer[coordSymbol];
-      node = layer;
-      while (node) {
-        t -= node[coordSymbol];
-        node = node.parent;
+      if (this.buttons == null) {
+        return false;
       }
-      return (t * -1) + layer[coordSymbol];
+      return this.buttons[name] === true;
     };
-    SDK.canvasToLocalX = function(layer, x) {
-      while (layer) {
-        x -= layer.x;
-        layer = layer.parent;
+    // * Нажата ли кнопка (continues зажата)
+    KDGamepad.isKeyPressed = function(name) {
+      if (!KDGamepad.isExists()) {
+        return false;
       }
-      return x;
-    };
-    SDK.canvasToLocalY = function(layer, y) {
-      while (layer) {
-        y -= layer.y;
-        layer = layer.parent;
+      if (this.buttons == null) {
+        return false;
       }
-      return y;
+      return this.prevButtons[name] === true;
     };
-    SDK.isInt = function(n) {
-      return Number(n) === n && n % 1 === 0;
+    KDGamepad.isDPadAny = function() {
+      return KDGamepad.isKeyAny("dLeft") || KDGamepad.isKeyAny("dRight") || KDGamepad.isKeyAny("dUp") || KDGamepad.isKeyAny("dDown");
     };
-    SDK.isFloat = function(n) {
-      return Number(n) === n && n % 1 !== 0;
+    KDGamepad.isActive = function() {
+      return this._isActive === true;
     };
-    SDK.checkSwitch = function(switchValue) {
-      if (switchValue === 'A' || switchValue === 'B' || switchValue === 'C' || switchValue === 'D') {
+    // * Временно отключить обработку KDGamepad
+    KDGamepad.setActive = function(_isActive) {
+      this._isActive = _isActive;
+      if (KDGamepad.isActive()) {
+        KDGamepad.refresh();
+      } else {
+        KDGamepad.stop();
+      }
+    };
+    // * Отключить перемещение игрока на DPad
+    KDGamepad.setNoDPadMovingMode = function(_noDpadMoving) {
+      this._noDpadMoving = _noDpadMoving;
+    };
+    return KDGamepad.isNoDPadMoving = function() {
+      return this._noDpadMoving === true;
+    };
+  })();
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var BitmapSrc;
+  BitmapSrc = (function() {
+    //?[DEPRECATED]
+    class BitmapSrc {
+      constructor() {
+        this.bitmap = null;
+      }
+
+      static LoadFromIconIndex(iconIndex) {
+        var bs, icon_bitmap, iconset, ph, pw, sx, sy;
+        bs = new BitmapSrc();
+        if (BitmapSrc.CACHE[iconIndex] == null) {
+          iconset = ImageManager.loadSystem('IconSet');
+          if (KDCore.isMV()) {
+            pw = Window_Base._iconWidth;
+            ph = Window_Base._iconHeight;
+          } else {
+            pw = ImageManager.iconWidth;
+            ph = ImageManager.iconHeight;
+          }
+          sx = iconIndex % 16 * pw;
+          sy = Math.floor(iconIndex / 16) * ph;
+          icon_bitmap = new Bitmap(pw, ph);
+          icon_bitmap.addLoadListener(function() {
+            icon_bitmap.blt(iconset, sx, sy, pw, ph, 0, 0);
+          });
+          BitmapSrc.CACHE[iconIndex] = icon_bitmap;
+        }
+        bs.bitmap = BitmapSrc.CACHE[iconIndex];
+        return bs;
+      }
+
+      static LoadFromImageFolder(filename) {
+        var bs;
+        bs = new BitmapSrc();
+        bs.bitmap = ImageManager.loadPicture(filename);
+        return bs;
+      }
+
+      static LoadFromBase64(data, name) {
+        var bs;
+        bs = new BitmapSrc();
+        if (name != null) {
+          if (BitmapSrc.CACHE[name] != null) {
+            bs.bitmap = BitmapSrc.CACHE[name];
+          } else {
+            BitmapSrc.CACHE[name] = Bitmap.load(data);
+            bs.bitmap = BitmapSrc.CACHE[name];
+          }
+        } else {
+          bs.bitmap = Bitmap.load(data);
+        }
+        return bs;
+      }
+
+      static LoadFromMemory(symbol) {
+        var bs;
+        bs = new BitmapSrc();
+        if (BitmapSrc.CACHE[symbol] != null) {
+          bs.bitmap = BitmapSrc.CACHE[symbol];
+        } else {
+          bs.bitmap = ImageManager.loadEmptyBitmap();
+        }
+        return bs;
+      }
+
+    };
+
+    BitmapSrc.CACHE = {};
+
+    return BitmapSrc;
+
+  }).call(this);
+  //@[EXTEND]
+  return KDCore.BitmapSrc = BitmapSrc;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Changer;
+  // * Класс который может плавно изменять какой-либо параметр
+  // * Работает в стиле chain методов
+
+    // * ------------------ ПРИМЕР ----------------------------------
+
+    // * Меняем прозрачность 4 раза, туда-сюда, затем выводим done в консоль
+
+    //@changer = new AA.Changer(someSprite)
+  //@changer.change('opacity').from(255)
+  //            .to(0).step(5).speed(1).delay(30).repeat(4).reverse()
+  //            .start().done(() -> console.log('done'))
+  //@changer.update()
+
+    // * -------------------------------------------------------------
+  Changer = class Changer {
+    constructor(obj) {
+      this.obj = obj;
+      // * Количество кадров, в которые будет обновление
+      this._field = null; // * название поля
+      this._speed = 1; // * frames
+      this._step = 1; // * шаг изменения значения
+      this._from = 0; // * Начальное значение
+      this._to = 0; // * Конечное значение
+      this._thread = null;
+      this._orienation = true; // * Направление + или - step (true = +)
+      this._delay = 0; // * Задержка старта
+      this._changer = null; // * Ссылка на следующий changer
+      this._isRepeat = false; // * Надо ли поторить себя снова
+      this._onDoneMethod = null; // * Метод будет выполнен в конце (при завершении)
+      this._isPrepared = false; // * Элемента был подготовлен (установлено значение from)
+    }
+
+    start() {
+      if (this._field == null) {
+        return;
+      }
+      if (this._from === this._to) {
+        return;
+      }
+      if (this._delay > 0) {
+        this._delayThread = new KDCore.TimedUpdate(this._delay, this._startThread.bind(this));
+        this._delayThread.once();
+      } else {
+        this._startThread();
+      }
+      return this;
+    }
+
+    isStarted() {
+      return (this._thread != null) || (this._delayThread != null);
+    }
+
+    from(_from) {
+      this._from = _from;
+      return this;
+    }
+
+    to(_to) {
+      this._to = _to;
+      return this;
+    }
+
+    step(_step) {
+      this._step = _step;
+      return this;
+    }
+
+    speed(_speed) {
+      this._speed = _speed;
+      return this;
+    }
+
+    change(_field) {
+      this._field = _field;
+      return this;
+    }
+
+    // * Снова повторить (не совместим с then)
+    // * Если ничего не указать, или <= 0 -> то бескончно
+    repeat(_repeatCount = 0) {
+      this._repeatCount = _repeatCount;
+      if (this._repeatCount <= 0) {
+        this._repeatCount = null;
+      }
+      this._isRepeat = true;
+      this._changer = null;
+      return this;
+    }
+
+    // * Снова повторить, но поменять местами to и from (работает только с repeat >= 2)
+    reverse() {
+      this._isReverse = true;
+      return this;
+    }
+
+    isDone() {
+      if (!this._isPrepared) {
+        // * Чтобы не было выхода пока ждёт Delay
+        return false;
+      }
+      // * Если от 255 до 0 (например)
+      if (this._orienation === false) {
+        // * То может быть меньше нуля (т.к. @step динамический)
+        return this.value() <= this._to;
+      } else {
+        return this.value() >= this._to;
+      }
+    }
+
+    value() {
+      return this.obj[this._field];
+    }
+
+    stop() {
+      this._thread = null;
+      this._delayThread = null;
+      if (this._changer == null) {
+        // * Если есть связанный Changer, то не выполняем метод завршения
+        return this._callDoneMethod();
+      }
+    }
+
+    // * При ожидании, значения устанавливаются не сразу
+    delay(_delay) {
+      this._delay = _delay;
+      return this;
+    }
+
+    // * Выполнить другой Changer после этого
+    // * Не совместим с Repeat
+    // * НЕЛЬЗЯ зацикливать, не будет работать
+    // * Соединённый не надо обновлять вне, он обновляется в этом
+    then(_changer) {
+      this._changer = _changer;
+      this._isRepeat = false;
+      return this;
+    }
+
+    // * Этот метод будт выполнене в конце
+    done(_onDoneMethod) {
+      this._onDoneMethod = _onDoneMethod;
+      return this;
+    }
+
+    // * Шаг можно выполнить и в ручную
+    makeStep() {
+      if (!this.isStarted()) {
+        this._prepare();
+      }
+      this._makeStep();
+      return this;
+    }
+
+    update() {
+      var ref;
+      if (this.isStarted()) {
+        if (this._delay > 0) {
+          if ((ref = this._delayThread) != null) {
+            ref.update();
+          }
+        }
+        if (this._thread != null) {
+          this._updateMainThread();
+        }
+      } else {
+        // * Если хоть раз был запущен
+        if (this._isBeenStarted === true) {
+          if (this._changer != null) {
+            this._updateChainedChanger();
+          }
+        }
+      }
+    }
+
+  };
+  (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Changer.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = Changer.prototype;
+    _._prepare = function() {
+      if (this._field == null) {
+        return;
+      }
+      this._orienation = this._from < this._to;
+      if (!this._orienation) {
+        this._step *= -1;
+      }
+      // * Устанавливаем начальное значение
+      this.obj[this._field] = this._from;
+      this._isPrepared = true;
+    };
+    _._makeStep = function() {
+      var value;
+      if (this.isDone()) {
+        return;
+      }
+      value = this.value();
+      value += this._step;
+      this.obj[this._field] = value;
+    };
+    _._startThread = function() {
+      this._prepare();
+      if (this.isDone()) {
+        return;
+      }
+      this._thread = new KDCore.TimedUpdate(this._speed, this._makeStep.bind(this));
+      return this._isBeenStarted = true;
+    };
+    _._updateChainedChanger = function() {
+      if (this._changer.isStarted()) {
+        this._changer.update();
+        if (this._changer.isDone()) {
+          this._callDoneMethod();
+          this._changer.stop();
+          return this._changer = null;
+        }
+      } else {
+        return this._changer.start();
+      }
+    };
+    _._restart = function() {
+      if (!this._isCanRepeatMore()) {
+        return;
+      }
+      if (this._repeatCount == null) {
+        // * Если указано! число повторений, то onDone метод не вызываем
+        this._callDoneMethod();
+      }
+      if (this._isReverse === true) {
+        this._swapFromTo();
+      }
+      this._prepare();
+      return this.start();
+    };
+    _._swapFromTo = function() {
+      var t;
+      t = this._from;
+      this._from = this._to;
+      this._to = t;
+      // * Инвентируем число step
+      this._step *= -1;
+    };
+    _._callDoneMethod = function() {
+      if (this._onDoneMethod != null) {
+        return this._onDoneMethod();
+      }
+    };
+    _._isCanRepeatMore = function() {
+      if (this._repeatCount == null) {
         return true;
       }
-      return false;
-    };
-    SDK.toNumber = function(string, none = 0) {
-      var number;
-      if (string == null) {
-        return none;
+      this._repeatCount--;
+      if (this._repeatCount <= 0) {
+        this.stop();
+        return false;
       }
-      number = Number(string);
-      if (isNaN(number)) {
-        return none;
-      }
-      return number;
+      return true;
     };
-    // * Color
-    //------------------------------------------------------------------------------
-    Color = class Color {
+    _._updateMainThread = function() {
+      this._thread.update();
+      if (this.isDone()) {
+        if (this._isRepeat === true) {
+          this._restart();
+        } else {
+          if (this._changer != null) {
+            this._updateChainedChanger();
+          }
+          this.stop();
+        }
+      }
+    };
+  })();
+  // ■ END Changer.coffee
+  //---------------------------------------------------------------------------
+
+  //@[EXTEND]
+  return KDCore.Changer = Changer;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Color;
+  Color = (function() {
+    class Color {
       constructor(r1 = 255, g1 = 255, b1 = 255, a1 = 255) {
         this.r = r1;
         this.g = g1;
@@ -1719,7 +3610,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
         color.toHex();
         color.toArray();
         color.toCSS();
-        SDK.setConstantToObject(Color, name, color);
+        KDCore.SDK.setConstantToObject(Color, name, color);
       }
 
       toHex() {
@@ -1758,9 +3649,9 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
       static Random() {
         var a, b, c;
-        a = SDK.rand(1, 254);
-        b = SDK.rand(1, 254);
-        c = SDK.rand(1, 254);
+        a = KDCore.SDK.rand(1, 254);
+        b = KDCore.SDK.rand(1, 254);
+        c = KDCore.SDK.rand(1, 254);
         return new Color(a, b, c, 255);
       }
 
@@ -1783,6 +3674,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       }
 
     };
+
     Object.defineProperties(Color.prototype, {
       R: {
         get: function() {
@@ -1833,2263 +3725,4440 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
         configurable: true
       }
     });
+
     Color.AddConstantColor('NONE', new Color(0, 0, 0, 0));
+
     Color.AddConstantColor('BLACK', new Color(0, 0, 0, 255));
+
     Color.AddConstantColor('WHITE', new Color(255, 255, 255, 255));
+
     Color.AddConstantColor('RED', new Color(255, 0, 0, 255));
+
     Color.AddConstantColor('GREEN', new Color(0, 255, 0, 255));
+
     Color.AddConstantColor('BLUE', new Color(0, 0, 255, 255));
+
     Color.AddConstantColor('AQUA', new Color(128, 255, 255, 255));
+
     Color.AddConstantColor('MAGENTA', new Color(128, 0, 128, 255));
+
     Color.AddConstantColor('YELLOW', new Color(255, 255, 0, 255));
+
     Color.AddConstantColor('ORANGE', new Color(255, 128, 0, 255));
-    BitmapSrc = (function() {
-      
-        //BitmapSrc
-      //------------------------------------------------------------------------------
-      class BitmapSrc {
-        constructor() {
-          this.bitmap = null;
-        }
 
-        static LoadFromIconIndex(iconIndex) {
-          var bs, icon_bitmap, iconset, ph, pw, sx, sy;
-          bs = new BitmapSrc();
-          if (BitmapSrc.CACHE[iconIndex] == null) {
-            iconset = ImageManager.loadSystem('IconSet');
-            if (KDCore.isMV()) {
-              pw = Window_Base._iconWidth;
-              ph = Window_Base._iconHeight;
-            } else {
-              pw = ImageManager.iconWidth;
-              ph = ImageManager.iconHeight;
-            }
-            sx = iconIndex % 16 * pw;
-            sy = Math.floor(iconIndex / 16) * ph;
-            icon_bitmap = new Bitmap(pw, ph);
-            icon_bitmap.addLoadListener(function() {
-              icon_bitmap.blt(iconset, sx, sy, pw, ph, 0, 0);
-            });
-            BitmapSrc.CACHE[iconIndex] = icon_bitmap;
-          }
-          bs.bitmap = BitmapSrc.CACHE[iconIndex];
-          return bs;
-        }
-
-        static LoadFromImageFolder(filename) {
-          var bs;
-          bs = new BitmapSrc();
-          bs.bitmap = ImageManager.loadPicture(filename);
-          return bs;
-        }
-
-        static LoadFromBase64(data, name) {
-          var bs;
-          bs = new BitmapSrc();
-          if (name != null) {
-            if (BitmapSrc.CACHE[name] != null) {
-              bs.bitmap = BitmapSrc.CACHE[name];
-            } else {
-              BitmapSrc.CACHE[name] = Bitmap.load(data);
-              bs.bitmap = BitmapSrc.CACHE[name];
-            }
-          } else {
-            bs.bitmap = Bitmap.load(data);
-          }
-          return bs;
-        }
-
-        static LoadFromMemory(symbol) {
-          var bs;
-          bs = new BitmapSrc();
-          if (BitmapSrc.CACHE[symbol] != null) {
-            bs.bitmap = BitmapSrc.CACHE[symbol];
-          } else {
-            bs.bitmap = ImageManager.loadEmptyBitmap();
-          }
-          return bs;
-        }
-
-      };
-
-      BitmapSrc.CACHE = {};
-
-      return BitmapSrc;
-
-    }).call(this);
-    // * DevLog
-    //------------------------------------------------------------------------------
-    __TMP_LOGS__ = [];
-    DevLog = class DevLog {
-      constructor(prefix = "") {
-        this.prefix = prefix;
-        this._isShow = typeof DEV !== 'undefined';
-        this._color = Color.BLACK;
-        this._backColor = Color.WHITE;
-        __TMP_LOGS__.push(this);
-      }
-
-      on() {
-        this._isShow = true;
-        return this;
-      }
-
-      off() {
-        this._isShow = false;
-        return this;
-      }
-
-      applyRandomColors() {
-        this.applyRandomWithoutBackgroundColors();
-        this.setBackColor(Color.Random());
-        return this;
-      }
-
-      applyRandomWithoutBackgroundColors() {
-        this.setColor(Color.Random());
-        return this;
-      }
-
-      setColor(color) {
-        this._color = color;
-        return this;
-      }
-
-      setBackColor(backColor) {
-        this._backColor = backColor;
-        return this;
-      }
-
-      applyLibraryColors() {
-        this.setColors(new Color(22, 120, 138, 0), Color.BLACK);
-        return this;
-      }
-
-      setColors(color, backColor) {
-        this.setColor(color);
-        this.setBackColor(backColor);
-        return this;
-      }
-
-      applyExtensionColors() {
-        this.setColors(new Color(22, 143, 137, 0), Color.BLACK.getLightestColor(60));
-        return this;
-      }
-
-      applyWarningColors() {
-        this.setColors(Color.ORANGE, Color.BLACK.getLightestColor(100));
-        return this;
-      }
-
-      p(text) {
-        if (!this._isShow) {
-          return;
-        }
-        if (text == null) {
-          console.log("");
-        }
-        this._printText(text);
-      }
-
-      _printText(text) {
-        text = this.prefix + " : " + text;
-        if (this._isUsingColor()) {
-          return this._printTextWithColors(text);
-        } else {
-          return console.log(text);
-        }
-      }
-
-      _isUsingColor() {
-        return this._color !== Color.BLACK || this._backColor !== Color.WHITE;
-      }
-
-      _printTextWithColors(text) {
-        var args;
-        args = ['%c' + text, `color: ${this._color.HEX} ; background: ${this._backColor.HEX};`];
-        return window.console.log.apply(console, args);
-      }
-
-      static CreateForLib(library) {
-        var dlog;
-        dlog = new DevLog(library.name);
-        dlog.applyLibraryColors();
-        return dlog;
-      }
-
-      static EnableAllLogs() {
-        return __TMP_LOGS__.forEach(function(log) {
-          return log.on();
-        });
-      }
-
-    };
-    // * ParametersManager
-    //------------------------------------------------------------------------------
-    PluginManager.getPluginParametersByRoot = function(rootName) {
-      var pluginParameters, property;
-      for (property in this._parameters) {
-        if (this._parameters.hasOwnProperty(property)) {
-          pluginParameters = this._parameters[property];
-          if (PluginManager.isPluginParametersContentKey(pluginParameters, rootName)) {
-            return pluginParameters;
-          }
-        }
-      }
-      return PluginManager.parameters(rootName);
-    };
-    PluginManager.isPluginParametersContentKey = function(pluginParameters, key) {
-      return pluginParameters[key] != null;
-    };
-    //@[AUTO EXTEND]
-    //?[DEPRECATED]
-    KDCore.ParametersManager = class ParametersManager {
-      constructor(pluginName) {
-        this.pluginName = pluginName;
-        this._cache = {};
-        this._parameters = PluginManager.getPluginParametersByRoot(this.pluginName);
-      }
-
-      isLoaded() {
-        return (this._parameters != null) && this._parameters.hasOwnProperty(this.pluginName);
-      }
-
-      isHasParameter(name) {
-        return this._parameters[name] != null;
-      }
-
-      getString(name) {
-        return this._parameters[name];
-      }
-
-      convertField(object, fieldName) {
-        var e;
-        try {
-          object[fieldName] = JSON.parse(object[fieldName] || 'false');
-        } catch (error1) {
-          e = error1;
-          console.error('Error while convert field ' + e.name);
-          object[fieldName] = false;
-        }
-        return object;
-      }
-
-      convertImage(object, fieldName) {
-        return object[fieldName] = this.loadImage(object[fieldName]);
-      }
-
-      loadImage(filename, smooth) {
-        var e, path;
-        try {
-          if (filename) {
-            path = filename.split('/');
-            filename = path.last();
-            path = path.first() + '/';
-            return ImageManager.loadBitmap('img/' + path, filename, 0, smooth || true);
-          } else {
-            return ImageManager.loadEmptyBitmap();
-          }
-        } catch (error1) {
-          e = error1;
-          console.error(e);
-          return ImageManager.loadEmptyBitmap();
-        }
-      }
-
-      getFromCacheOrInit(name, func) {
-        var object;
-        if (!this.isInCache(name)) {
-          if (func != null) {
-            object = func.call(this);
-            this.putInCache(name, object);
-          }
-        }
-        return this.getFromCache(name);
-      }
-
-      isInCache(name) {
-        return this._cache.hasOwnProperty(name);
-      }
-
-      putInCache(name, object) {
-        return this._cache[name] = object;
-      }
-
-      getFromCache(name) {
-        return this._cache[name];
-      }
-
-      getNumber(name) {
-        var number;
-        number = this.getObject(name);
-        if (SDK.isInt(number)) {
-          return number;
-        }
-        return 0;
-      }
-
-      getObject(name) {
-        if (this.isHasParameter(name)) {
-          return JSON.parse(this.getString(name) || '{}');
-        } else {
-          return {};
-        }
-      }
-
-      getBoolean(name) {
-        if (this.isHasParameter(name)) {
-          return JSON.parse(this.getString(name) || false);
-        } else {
-          return false;
-        }
-      }
-
-      getBooleanFromCacheWithDefault(name, defaultValue) {
-        if (this.isHasParameter(name)) {
-          return this.getBooleanFromCache(name);
-        } else {
-          return defaultValue;
-        }
-      }
-
-      getNumberFromCacheWithDefault(name, defaultValue) {
-        if (this.isHasParameter(name)) {
-          return this.getNumberFromCache(name);
-        } else {
-          return defaultValue;
-        }
-      }
-
-      getStringFromCacheWithDefault(name, defaultValue) {
-        if (this.isHasParameter(name)) {
-          return this.getStringFromCache(name);
-        } else {
-          return defaultValue;
-        }
-      }
-
-      getBooleanFromCache(name) {
-        return this.getFromCacheOrInit(name, function() {
-          return this.getBoolean(name);
-        });
-      }
-
-      getNumberFromCache(name) {
-        return this.getFromCacheOrInit(name, function() {
-          return this.getNumber(name);
-        });
-      }
-
-      getStringFromCache(name) {
-        return this.getFromCacheOrInit(name, function() {
-          return this.getString(name);
-        });
-      }
-
-    };
-    // * ParamLoader (ParametersManager alternative)
-
-      //@[AUTO EXTEND]
-    KDCore.ParamLoader = class ParamLoader {
-      constructor(pluginName) {
-        this.pluginName = pluginName;
-        this.paramsRaw = PluginManager.getPluginParametersByRoot(this.pluginName);
-        this.params = this.parseParameters(this.paramsRaw);
-      }
-
-      parseParameters(paramSet) {
-        var clearKey, key, params, typeKey, value;
-        params = {};
-        for (key in paramSet) {
-          value = paramSet[key];
-          clearKey = this.parseKey(key);
-          typeKey = this.parseKeyType(key);
-          params[clearKey] = this.parseParamItem(typeKey, value);
-        }
-        return params;
-      }
-
-      parseKey(keyRaw) {
-        return keyRaw.split(":")[0];
-      }
-
-      parseKeyType(keyRaw) {
-        return keyRaw.split(":")[1];
-      }
-
-      // * Проверка, загружены ли параметры плагина
-      isLoaded() {
-        return (this.paramsRaw != null) && this.paramsRaw.hasOwnProperty(this.pluginName);
-      }
-
-      // * Имя параметра без ключа
-      isHasParameter(paramName) {
-        return this.params[paramName] != null;
-      }
-
-      
-        // * Возвращает значение параметра (def - по умолчанию, если не найден)
-      getParam(paramName, def) {
-        if (this.isHasParameter(paramName)) {
-          return this.params[paramName];
-        } else {
-          return def;
-        }
-      }
-
-      // * Данные ключи должны идти после названия параметра через :
-      // * Пример: @param ShowDelay:int, @param TestBool:bool
-      // * Текстовые параметры, которые надо вернуть как есть, можно без типа (text, file, combo, ...)
-      parseParamItem(type, item) {
-        var e;
-        if (type == null) {
-          return item;
-        }
-        try {
-          switch (type) {
-            case "int":
-            case "i":
-              return parseInt(item);
-            case "intA": // * массив чисел
-              if (String.any(item)) {
-                return JsonEx.parse(item).map((e) => {
-                  return this.parseParamItem("int", e);
-                });
-              } else {
-                return [];
-              }
-              break;
-            case "bool":
-            case "b":
-            case "e":
-              return eval(item);
-            case "struct":
-            case "s":
-              if (String.any(item)) {
-                return this.parseParameters(JsonEx.parse(item));
-              } else {
-                return null;
-              }
-              break;
-            case "structA": // * массив структур
-              return JsonEx.parse(item).map((e) => {
-                return this.parseParameters(JsonEx.parse(e));
-              });
-            case "str":
-              return item;
-            case "strA":
-              if (String.any(item)) {
-                return JsonEx.parse(item).map((e) => {
-                  return this.parseParamItem("str", e);
-                });
-              } else {
-                return [];
-              }
-              break;
-            case "note": // * если несколько строк в тексте
-              return JsonEx.parse(item);
-            case "css":
-              return item.toCss();
-            case "color":
-              return KDCore.Color.FromHex(item);
-            default:
-              return item;
-          }
-        } catch (error1) {
-          e = error1;
-          console.warn(e);
-          return item;
-        }
-      }
-
-    };
-    Point = (function() {
-      // * Point
-      //------------------------------------------------------------------------------
-      class Point {
-        constructor(_x = 0, _y = 0) {
-          this._x = _x;
-          this._y = _y;
-        }
-
-        clone() {
-          return new Point(this._x, this._y);
-        }
-
-        toString() {
-          return "[" + this._x + " ; " + this._y + "]";
-        }
-
-        isSame(anotherPoint) {
-          return this.x === anotherPoint.x && this.y === anotherPoint.y;
-        }
-
-        convertToCanvas() {
-          return new Point(Graphics.pageToCanvasX(this._x), Graphics.pageToCanvasY(this._y));
-        }
-
-        convertToMap() {
-          return new Point($gameMap.canvasToMapX(this._x), $gameMap.canvasToMapY(this._y));
-        }
-
-        convertToScreen() {
-          return new Point(this.screenX(), this.screenY());
-        }
-
-        screenX() {
-          var t, tw;
-          t = $gameMap.adjustX(this._x);
-          tw = $gameMap.tileWidth();
-          return Math.round(t * tw + tw / 2);
-        }
-
-        screenY() {
-          var t, th;
-          t = $gameMap.adjustY(this._y);
-          th = $gameMap.tileHeight();
-          return Math.round(t * th + th);
-        }
-
-        round() {
-          return new Point(Math.round(this._x), Math.round(this._y));
-        }
-
-        floor() {
-          return new Point(Math.floor(this._x), Math.floor(this._y));
-        }
-
-        mapPointOnScreen() {
-          var nx, ny;
-          nx = (this._x * $gameMap.tileWidth()) - ($gameMap.displayX() * $gameMap.tileWidth());
-          ny = (this._y * $gameMap.tileHeight()) - ($gameMap.displayY() * $gameMap.tileHeight());
-          return new Point(nx, ny);
-        }
-
-        multiplyBy(val) {
-          return new Point(this._x * val, this._y * val);
-        }
-
-        simple() {
-          return new PIXI.Point(this.x, this.y);
-        }
-
-        delta(point) {
-          var dx, dy;
-          dx = point.x - this._x;
-          dy = point.y - this._y;
-          return new KDCore.Point(dx, dy);
-        }
-
-        static _getEmpty() {
-          if (Point._emptyPoint == null) {
-            Point._emptyPoint = new Point(0, 0);
-          }
-          return Point._emptyPoint;
-        }
-
-      };
-
-      Object.defineProperties(Point.prototype, {
-        x: {
-          get: function() {
-            return this._x;
-          },
-          configurable: true
-        },
-        y: {
-          get: function() {
-            return this._y;
-          },
-          configurable: true
-        }
-      });
-
-      Object.defineProperties(Point, {
-        Empty: {
-          get: function() {
-            return Point._getEmpty();
-          },
-          configurable: false
-        }
-      });
-
-      Array.prototype.toPoint = function() {
-        return new Point(this[0], this[1]);
-      };
-
-      Sprite.prototype.toPoint = function() {
-        return new Point(this.x, this.y);
-      };
-
-      Game_CharacterBase.prototype.toPoint = function() {
-        return new Point(this.x, this.y);
-      };
-
-      return Point;
-
-    }).call(this);
-    // * Utils
-    //------------------------------------------------------------------------------
-    KDCore.Utils = KDCore.Utils || {};
-    (function() {
-      var _;
-      _ = KDCore.Utils;
-      _.getJDataById = function(id, source) {
-        var d, len, q;
-        for (q = 0, len = source.length; q < len; q++) {
-          d = source[q];
-          if (d.id === id) {
-            return d;
-          }
-        }
-        return null;
-      };
-      _.hasMeta = function(symbol, obj) {
-        return (obj.meta != null) && (obj.meta[symbol] != null);
-      };
-      _.getValueFromMeta = function(symbol, obj) {
-        if (!_.hasMeta(symbol, obj)) {
-          return null;
-        }
-        return obj.meta[symbol];
-      };
-      _.getNumberFromMeta = function(symbol, obj) {
-        var value;
-        if (!_.hasMeta(symbol, obj)) {
-          return null;
-        }
-        if (obj.meta[symbol] === true) {
-          return 0;
-        } else {
-          value = KDCore.SDK.toNumber(obj.meta[symbol], 0);
-        }
-        return value;
-      };
-      _.isSceneMap = function() {
-        try {
-          return SceneManager._scene instanceof Scene_Map;
-        } catch (error1) {
-          return false;
-        }
-      };
-      _.isSceneBattle = function() {
-        try {
-          return SceneManager._scene instanceof Scene_Battle;
-        } catch (error1) {
-          return false;
-        }
-      };
-      _.getEventCommentValue = function(commentCode, list) {
-        var comment, e, item;
-        try {
-          if (list && list.length > 1) {
-            i = 0;
-            while (i < list.length) {
-              item = list[i++];
-              if (!item) {
-                continue;
-              }
-              if (item.code === 108) {
-                comment = item.parameters[0];
-                if (comment.contains(commentCode)) {
-                  return comment;
-                }
-              }
-            }
-          }
-        } catch (error1) {
-          e = error1;
-          console.warn(e);
-        }
-        return null;
-      };
-      _.getEventCommentValueArray = function(commentCode, list) {
-        var comment, comments, e, item;
-        try {
-          comments = [];
-          if (list && list.length > 1) {
-            i = 0;
-            while (i < list.length) {
-              item = list[i++];
-              if (!item) {
-                continue;
-              }
-              if (item.code === 108) {
-                comment = item.parameters[0];
-                if (comment.contains(commentCode)) {
-                  comments.push(comment);
-                }
-              }
-            }
-          }
-        } catch (error1) {
-          e = error1;
-          console.warn(e);
-        }
-        return comments;
-      };
-      _.getPositionPointFromJSON = function(jsonSettings) {
-        return _.convertPositionPointFromJSON(jsonSettings.position);
-      };
-      _.convertPositionPointFromJSON = function(position) {
-        var e, x, y;
-        try {
-          x = position[0];
-          y = position[1];
-          if (!KDCore.SDK.isInt(x)) {
-            x = eval(x);
-          }
-          if (!KDCore.SDK.isInt(y)) {
-            y = eval(y);
-          }
-          return new KDCore.Point(x, y);
-        } catch (error1) {
-          e = error1;
-          console.warn('Utils.getPositionPointFromJSON', e);
-          return KDCore.Point.Empty;
-        }
-      };
-      _.jsonPos = function(jsonPosition) {
-        return _.convertPositionPointFromJSON(jsonPosition);
-      };
-      _.jsonPosXY = function(jsonPosition) {
-        var e, x, y;
-        try {
-          ({x, y} = jsonPosition);
-          return new KDCore.Point(eval(x), eval(y));
-        } catch (error1) {
-          e = error1;
-          console.warn('Utils.jsonPosXY', e);
-          return KDCore.Point.Empty;
-        }
-      };
-      _.getVar = function(id) {
-        return $gameVariables.value(id);
-      };
-      _.setVar = function(id, value) {
-        return $gameVariables.setValue(id, value);
-      };
-      _.addToVar = function(id, value) {
-        var prevVal;
-        prevVal = _.getVar(id);
-        return _.setVar(id, prevVal + value);
-      };
-      _.playSE = function(seFileName, pitch = 100, volume = 100) {
-        var sound;
-        if (seFileName == null) {
-          return;
-        }
-        if (seFileName === "") {
-          return;
-        }
-        sound = {
-          name: seFileName,
-          pan: 0,
-          pitch: pitch,
-          volume: volume
-        };
-        AudioManager.playStaticSe(sound);
-      };
-      _.getItemTypeId = function(item) {
-        if (DataManager.isWeapon(item)) {
-          return 1;
-        } else if (DataManager.isArmor(item)) {
-          return 2;
-        }
-        return 0;
-      };
-      _.getItemByType = function(itemId, typeId) {
-        var data;
-        data = [$dataItems, $dataWeapons, $dataArmors];
-        return data[typeId][itemId];
-      };
-      _.loadFont = function(name) {
-        if (!KDCore.isMZ()) {
-          return;
-        }
-        if (String.isNullOrEmpty(name)) {
-          return;
-        }
-        if (FontManager._states[name] != null) {
-          return;
-        }
-        FontManager.load(name, name + ".ttf");
-      };
-      _.convertTimeShort = function(seconds) {
-        var e;
-        try {
-          if (seconds > 59) {
-            return Math.floor(seconds / 60) + 'm';
-          } else {
-            return seconds;
-          }
-        } catch (error1) {
-          e = error1;
-          console.warn(e);
-          return seconds;
-        }
-      };
-      _.isPointInScreen = function(point, margin = 10) {
-        var maxH, maxW, screenMargin, x, y;
-        ({x, y} = point);
-        maxW = Graphics.width;
-        maxH = Graphics.height;
-        // * Граница от краёв экрана
-        screenMargin = margin;
-        if (x < screenMargin) {
-          return false;
-        }
-        if (y < screenMargin) {
-          return false;
-        }
-        if (x > (maxW - screenMargin)) {
-          return false;
-        }
-        if (y > (maxH - screenMargin)) {
-          return false;
-        }
-        return true;
-      };
-      // * Ассинхронная загрузка изображения, возвращает bitmap, когда загружен
-      // * Пример использования loadImageAsync(a, b).then(метод)
-      // в метод будет передан bitmap первым аргументом
-      _.loadImageAsync = async function(folder, filename) {
-        var promise;
-        promise = new Promise(function(resolve, reject) {
-          var b;
-          b = ImageManager.loadBitmap("img/" + folder + "/", filename);
-          return b.addLoadListener(function() {
-            return resolve(b);
-          });
-        });
-        return (await promise);
-      };
-    })();
-    // * TimedUpdate
-    //------------------------------------------------------------------------------
-    //@[AUTO EXTEND]
-    KDCore.TimedUpdate = class TimedUpdate {
-      constructor(interval, method1) {
-        this.interval = interval;
-        this.method = method1;
-        this._timer = 0;
-        this._once = false;
-      }
-
-      update() {
-        if (this.interval == null) {
-          return;
-        }
-        if (this._timer++ >= this.interval) {
-          this.call();
-          this._timer = 0;
-          if (this._once === true) {
-            return this.stop();
-          }
-        }
-      }
-
-      once() {
-        return this._once = true;
-      }
-
-      onUpdate(method1) {
-        this.method = method1;
-      }
-
-      stop() {
-        return this.interval = null;
-      }
-
-      isAlive() {
-        return this.interval != null;
-      }
-
-      // * Рандомизировать интервал @interval (-min, +max)
-      applyTimeRange(min, max) {
-        var value;
-        if (!this.isAlive()) {
-          return;
-        }
-        value = SDK.rand(min, max);
-        return this.interval += value;
-      }
-
-      call() {
-        if (this.method != null) {
-          return this.method();
-        }
-      }
-
-    };
-    // * Button (Sprite_XButton)
-    //------------------------------------------------------------------------------
-    //@[AUTO EXTEND]
-    //?DEPRECATED
-    KDCore.Button = class Button extends Sprite {
-      constructor() {
-        super();
-        this._mouseIn = false;
-        this._touching = false;
-        this._slowUpdateActive = false;
-        this._localMode = false;
-        this._images = [];
-        this._checkAlpha = false;
-        this._textSprite = null;
-        this._textPosition = 0;
-        this._override = false; // * TouchClick in game messages not work anymore if TRUE
-        this._clickHandlers = [];
-        this._manualHided = false;
-        this._manualDisabled = false;
-        this._condition = null; // * Условие для Visible
-        this._condition2 = null; // * Условие для Enable \ Disable
-        this._disabled = false;
-        this._infoData = null;
-        this._isNeedShowText = false;
+    return Color;
+
+  }).call(this);
+  //@[EXTEND]
+  return KDCore.Color = Color;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Color, DevLog, __TMP_LOGS__;
+  Color = KDCore.Color;
+  __TMP_LOGS__ = [];
+  DevLog = class DevLog {
+    constructor(prefix = "") {
+      this.prefix = prefix;
+      this._isShow = typeof DEV !== 'undefined';
+      this._color = Color.BLACK;
+      this._backColor = Color.WHITE;
+      __TMP_LOGS__.push(this);
+    }
+
+    on() {
+      this._isShow = true;
+      return this;
+    }
+
+    off() {
+      this._isShow = false;
+      return this;
+    }
+
+    applyRandomColors() {
+      this.applyRandomWithoutBackgroundColors();
+      this.setBackColor(Color.Random());
+      return this;
+    }
+
+    applyRandomWithoutBackgroundColors() {
+      this.setColor(Color.Random());
+      return this;
+    }
+
+    setColor(color) {
+      this._color = color;
+      return this;
+    }
+
+    setBackColor(backColor) {
+      this._backColor = backColor;
+      return this;
+    }
+
+    applyLibraryColors() {
+      this.setColors(new Color(22, 120, 138, 0), Color.BLACK);
+      return this;
+    }
+
+    setColors(color, backColor) {
+      this.setColor(color);
+      this.setBackColor(backColor);
+      return this;
+    }
+
+    applyExtensionColors() {
+      this.setColors(new Color(22, 143, 137, 0), Color.BLACK.getLightestColor(60));
+      return this;
+    }
+
+    applyWarningColors() {
+      this.setColors(Color.ORANGE, Color.BLACK.getLightestColor(100));
+      return this;
+    }
+
+    p(text) {
+      if (!this._isShow) {
         return;
       }
-
-      isMouseInButton() {
-        return this._mouseIn === true;
+      if (text == null) {
+        console.log("");
       }
+      this._printText(text);
+    }
 
-      isActive() {
-        return this.visible === true;
+    _printText(text) {
+      text = this.prefix + " : " + text;
+      if (this._isUsingColor()) {
+        return this._printTextWithColors(text);
+      } else {
+        return console.log(text);
       }
+    }
 
-      activateSlowUpdate() {
-        return this._slowUpdateActive = true;
+    _isUsingColor() {
+      return this._color !== Color.BLACK || this._backColor !== Color.WHITE;
+    }
+
+    _printTextWithColors(text) {
+      var args;
+      args = ['%c' + text, `color: ${this._color.HEX} ; background: ${this._backColor.HEX};`];
+      return window.console.log.apply(console, args);
+    }
+
+    static CreateForLib(library) {
+      var dlog;
+      dlog = new DevLog(library.name);
+      dlog.applyLibraryColors();
+      return dlog;
+    }
+
+    static EnableAllLogs() {
+      return __TMP_LOGS__.forEach(function(log) {
+        return log.on();
+      });
+    }
+
+  };
+  //@[EXTEND]
+  return KDCore.DevLog = DevLog;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+// * Класс для глобального события игры (НЕ события на карте)
+KDCore.registerLibraryToLoad(function() {
+  //@[AUTO EXTEND]
+  return KDCore.GEvent = class GEvent {
+    constructor(name) {
+      this.name = name;
+      this.clear();
+    }
+
+    addListener(listener, isSingle = false) {
+      if (listener == null) {
+        return;
       }
-
-      setLocalMode() {
-        this._realX = this.x;
-        this._realY = this.y;
-        return this._localMode = true;
+      if (isSingle === true) {
+        this.listeners = [listener];
+      } else {
+        this.listeners.push(listener);
       }
+    }
 
-      setAlphaMode() {
-        return this._checkAlpha = true;
+    removeListener(listener) {
+      if (listener == null) {
+        return;
       }
+      return this.listener.delete(listener);
+    }
 
-      // * above, below
-      setTextPosition(position) {
-        return this._textPosition = position;
+    call() {
+      var i, l, len, ref;
+      ref = this.listeners;
+      for (i = 0, len = ref.length; i < len; i++) {
+        l = ref[i];
+        l();
       }
+    }
 
-      setHelpText(text, size) {
-        return this._createText(text, size);
+    clear() {
+      return this.listeners = [];
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+// * Менеджер для управления глобальными событиями игры (GEvent) (НЕ события на карте)
+KDCore.registerLibraryToLoad(function() {
+  var GEventsManager;
+  // * Данный менеджер глобальный, т.е. с ним работают ВСЕ плагины, которые его используют!
+  GEventsManager = function() {};
+  (function() {
+    var _;
+    _ = GEventsManager;
+    // * Существует ли событие с данным именем
+    _.isEventExists = function(gEventName) {
+      return this._getEventByName(gEventName) != null;
+    };
+    // * Получить список всех зарегестрированных событий (имён)
+    _.getAllEvents = function() {
+      if (this.events == null) {
+        return [];
       }
-
-      setInfoData(data) {
-        return this._infoData = data;
+      return this.events.map(function(ev) {
+        return ev.name;
+      });
+    };
+    // * Зарегестрировать событие (используется только имя события)
+    _.register = function(gEventName) {
+      if (this.events == null) {
+        this.events = [];
       }
-
-      setOverrideMode() {
-        return this._override = true;
+      this.events.push(new KDCore.GEvent(gEventName));
+    };
+    // * Подписаться на событие (имя события) и слушатель
+    // * если isSingle == true - то у события может быть только один исполнитель
+    _.subscribeFor = function(evName, listener, isSingle = false) {
+      var ref;
+      return (ref = this._getEventByName(evName)) != null ? ref.addListener(listener, isSingle) : void 0;
+    };
+    // * Подписаться на событие (уникально) для объекта
+    // * Т.е. при вызове этого метода ещё раз, если объект
+    // * уже подписан на событие, ничего не будет (без дубликатов)
+    //? ВНИМАНИЕ ! Если объект подписался через subscribeForX, то
+    // выполнив clear по данному evName, он уже не подпишится!
+    _.subscribeForX = function(context, evName, listener) {
+      var e, key;
+      try {
+        key = "__kdCoreGEvent_" + evName;
+        if (context[key] == null) {
+          this.subscribeFor(evName, listener);
+          return context[key] = true;
+        }
+      } catch (error) {
+        e = error;
+        return KDCore.warning(e);
       }
-
-      isOverride() {
-        return this._override === true && this.isActive() && this.touchInButton();
+    };
+    // * Вызвать событие (по имени)
+    _.call = function(evName) {
+      var ref;
+      return (ref = this._getEventByName(evName)) != null ? ref.call() : void 0;
+    };
+    _.clear = function(evName) {
+      var ref;
+      return (ref = this._getEventByName(evName)) != null ? ref.clear() : void 0;
+    };
+    _._getEventByName = function(name) {
+      if (!this.events) {
+        return null;
       }
+      return this.events.find(function(ev) {
+        return ev.name === name;
+      });
+    };
+  })();
+  //@[EXTEND]
+  return KDCore.GEventsManager = GEventsManager;
+});
 
-      isDisabled() {
-        return this._disabled === true;
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  //@[AUTO EXTEND]
+  //?[DEPRECATED]
+  return KDCore.ParametersManager = class ParametersManager {
+    constructor(pluginName) {
+      this.pluginName = pluginName;
+      this._cache = {};
+      this._parameters = PluginManager.getPluginParametersByRoot(this.pluginName);
+    }
+
+    isLoaded() {
+      return (this._parameters != null) && this._parameters.hasOwnProperty(this.pluginName);
+    }
+
+    isHasParameter(name) {
+      return this._parameters[name] != null;
+    }
+
+    getString(name) {
+      return this._parameters[name];
+    }
+
+    convertField(object, fieldName) {
+      var e;
+      try {
+        object[fieldName] = JSON.parse(object[fieldName] || 'false');
+      } catch (error) {
+        e = error;
+        console.error('Error while convert field ' + e.name);
+        object[fieldName] = false;
       }
+      return object;
+    }
 
-      isEnabled() {
-        return !this.isDisabled();
-      }
+    convertImage(object, fieldName) {
+      return object[fieldName] = this.loadImage(object[fieldName]);
+    }
 
-      isNeedShowText() {
-        return this._isNeedShowText === true;
-      }
-
-      addClickHandler(method) {
-        return this._clickHandlers.push(method);
-      }
-
-      clearClickHandlers() {
-        return this._clickHandlers = [];
-      }
-
-      isLocalMode() {
-        return this._localMode === true;
-      }
-
-      setCondition(method) {
-        return this._condition = method;
-      }
-
-      setConditionForDisable(method) {
-        return this._condition2 = method;
-      }
-
-      getInfoData() {
-        return this._infoData;
-      }
-
-      simulateClick() { //?NEW
-        return this.applyClickedState();
-      }
-
-      simulateClickManual() { //?NEW
-        this.simulateClick();
-        return setTimeout((() => {
-          try {
-            return this.applyNormalState();
-          } catch (error1) {
-
-          }
-        }), 50);
-      }
-
-      prepare() { //?NEW
-        return this.slowUpdate();
-      }
-
-      realX() {
-        if (this.isLocalMode()) {
-          return this._realX;
+    loadImage(filename, smooth) {
+      var e, path;
+      try {
+        if (filename) {
+          path = filename.split('/');
+          filename = path.last();
+          path = path.first() + '/';
+          return ImageManager.loadBitmap('img/' + path, filename, 0, smooth || true);
         } else {
-          return this.x;
+          return ImageManager.loadEmptyBitmap();
+        }
+      } catch (error) {
+        e = error;
+        console.error(e);
+        return ImageManager.loadEmptyBitmap();
+      }
+    }
+
+    getFromCacheOrInit(name, func) {
+      var object;
+      if (!this.isInCache(name)) {
+        if (func != null) {
+          object = func.call(this);
+          this.putInCache(name, object);
         }
       }
+      return this.getFromCache(name);
+    }
 
-      realY() {
-        if (this.isLocalMode()) {
-          return this._realY;
-        } else {
-          return this.y;
-        }
+    isInCache(name) {
+      return this._cache.hasOwnProperty(name);
+    }
+
+    putInCache(name, object) {
+      return this._cache[name] = object;
+    }
+
+    getFromCache(name) {
+      return this._cache[name];
+    }
+
+    getNumber(name) {
+      var number;
+      number = this.getObject(name);
+      if (KDCore.SDK.isInt(number)) {
+        return number;
       }
+      return 0;
+    }
 
-      show() {
-        this.visible = true;
-        return this._manualHided = false;
+    getObject(name) {
+      if (this.isHasParameter(name)) {
+        return JSON.parse(this.getString(name) || '{}');
+      } else {
+        return {};
       }
+    }
 
-      hide() {
-        this.visible = false;
-        return this._manualHided = true;
+    getBoolean(name) {
+      if (this.isHasParameter(name)) {
+        return JSON.parse(this.getString(name) || false);
+      } else {
+        return false;
       }
+    }
 
-      disable() {
-        this._disabled = true;
-        this._manualDisabled = true;
-        this.refreshEnDisState();
-        return this._mouseIn = false;
+    getBooleanFromCacheWithDefault(name, defaultValue) {
+      if (this.isHasParameter(name)) {
+        return this.getBooleanFromCache(name);
+      } else {
+        return defaultValue;
       }
+    }
 
-      enable() {
-        this._disabled = false;
-        this._manualDisabled = false;
-        return this.refreshEnDisState();
+    getNumberFromCacheWithDefault(name, defaultValue) {
+      if (this.isHasParameter(name)) {
+        return this.getNumberFromCache(name);
+      } else {
+        return defaultValue;
       }
+    }
 
-      update() {
-        super.update();
-        if (this._destroyed === true) {
-          return;
-        }
-        this.updateMouseClick();
-        this.updatePosition();
-        if (!this._slowUpdateActive) {
-          this.slowUpdate();
-        }
-        return this.updateComplexTextVisible();
+    getStringFromCacheWithDefault(name, defaultValue) {
+      if (this.isHasParameter(name)) {
+        return this.getStringFromCache(name);
+      } else {
+        return defaultValue;
       }
+    }
 
-      slowUpdate() {
-        if (this._destroyed === true) {
-          return;
-        }
-        this.updateMouseTracking();
-        this.updateConditionForVisible();
-        return this.updateConditionForEnabling();
+    getBooleanFromCache(name) {
+      return this.getFromCacheOrInit(name, function() {
+        return this.getBoolean(name);
+      });
+    }
+
+    getNumberFromCache(name) {
+      return this.getFromCacheOrInit(name, function() {
+        return this.getNumber(name);
+      });
+    }
+
+    getStringFromCache(name) {
+      return this.getFromCacheOrInit(name, function() {
+        return this.getString(name);
+      });
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  //@[AUTO EXTEND]
+  return KDCore.ParamLoader = class ParamLoader {
+    constructor(pluginName) {
+      this.pluginName = pluginName;
+      this.paramsRaw = PluginManager.getPluginParametersByRoot(this.pluginName);
+      this.params = this.parseParameters(this.paramsRaw);
+    }
+
+    parseParameters(paramSet) {
+      var clearKey, key, params, typeKey, value;
+      params = {};
+      for (key in paramSet) {
+        value = paramSet[key];
+        clearKey = this.parseKey(key);
+        typeKey = this.parseKeyType(key);
+        params[clearKey] = this.parseParamItem(typeKey, value);
       }
+      return params;
+    }
 
-      updateMouseTracking() {
-        if (!this.isActive()) {
-          return;
-        }
-        if (this.isDisabled()) {
-          return;
-        }
-        if (this.cursorInButton()) {
-          this._onMouseEnter();
-          return this._mouseIn = true;
-        } else {
-          this._onMouseLeave();
-          return this._mouseIn = false;
-        }
+    parseKey(keyRaw) {
+      return keyRaw.split(":")[0];
+    }
+
+    parseKeyType(keyRaw) {
+      return keyRaw.split(":")[1];
+    }
+
+    // * Проверка, загружены ли параметры плагина
+    isLoaded() {
+      return (this.paramsRaw != null) && this.paramsRaw.hasOwnProperty(this.pluginName);
+    }
+
+    // * Имя параметра без ключа
+    isHasParameter(paramName) {
+      return this.params[paramName] != null;
+    }
+
+    
+      // * Возвращает значение параметра (def - по умолчанию, если не найден)
+    getParam(paramName, def) {
+      if (this.isHasParameter(paramName)) {
+        return this.params[paramName];
+      } else {
+        return def;
       }
+    }
 
-      // * In MZ TouchInput always have X,Y
-      cursorInButton() {
-        return this.touchInButton();
+    // * Данные ключи должны идти после названия параметра через :
+    // * Пример: @param ShowDelay:int, @param TestBool:bool
+    // * Текстовые параметры, которые надо вернуть как есть, можно без типа (text, file, combo, ...)
+    parseParamItem(type, item) {
+      var e;
+      if (type == null) {
+        return item;
       }
-
-      xyInButton(x, y) {
-        var inRect, rect, rx, ry;
-        rx = KDCore.SDK.toGlobalCoord(this, 'x');
-        ry = KDCore.SDK.toGlobalCoord(this, 'y');
-        rect = new PIXI.Rectangle(rx, ry, this._realWidth(), this._realHeight());
-        inRect = rect.contains(x, y);
-        if (inRect === true && this._checkAlpha === true) {
-          return this._checkAlphaPixel(x - rx, y - ry);
-        } else {
-          return inRect;
-        }
-      }
-
-      _realWidth() {
-        if (this._hasImage()) {
-          return this._mainImage().width;
-        } else {
-          return this.width;
-        }
-      }
-
-      _hasImage() {
-        return this._mainImage() != null;
-      }
-
-      _mainImage() {
-        return this._images[0];
-      }
-
-      _realHeight() {
-        if (this._hasImage()) {
-          return this._mainImage().height;
-        } else {
-          return this.height;
-        }
-      }
-
-      _checkAlphaPixel(x, y) {
-        var pixel;
-        pixel = this._hasImage() ? this._mainImage().bitmap.getAlphaPixel(x, y) : this.bitmap.getAlphaPixel(x, y);
-        return pixel >= 200;
-      }
-
-      _onMouseEnter() {
-        if (this._mouseIn === true) {
-          return;
-        }
-        if (!this.isDisabled()) {
-          this.applyCoverState();
-        }
-        this._showText();
-        if (this.getInfoData() != null) {
-          return this._startComplexTimer();
-        }
-      }
-
-      _onMouseLeave() {
-        if (this._mouseIn === false) {
-          return;
-        }
-        if (!this.isDisabled()) {
-          this.applyNormalState();
-        }
-        this._hideText();
-        return this._stopComplexTimer();
-      }
-
-      _showText() {
-        if (this._textSprite == null) {
-          return;
-        }
-        this._updateTextPosition();
-        return this._textSprite.visible = true;
-      }
-
-      _hideText() {
-        if (this._textSprite == null) {
-          return;
-        }
-        return this._textSprite.visible = false;
-      }
-
-      _startComplexTimer() {
-        this._stopComplexTimer();
-        return this._cTimer = setTimeout((() => {
-          if (this._mouseIn === true) {
-            return this._isNeedShowText = true;
-          }
-        }), 1000);
-      }
-
-      _stopComplexTimer() {
-        if (this._cTimer != null) {
-          clearTimeout(this._cTimer);
-        }
-        return this._isNeedShowText = false;
-      }
-
-      updateMouseClick() {
-        if (!this.isActive()) {
-          this._unTouch();
-          return;
-        }
-        if (this.isDisabled()) {
-          return;
-        }
-        if (TouchInput.isTriggered() && this.touchInButton()) {
-          this._touching = true;
-          this.applyClickedState();
-        }
-        if (this._touching === true) {
-          if (TouchInput.isReleased() || !this.touchInButton()) {
-            this._unTouch();
-            if (TouchInput.isReleased()) {
-              return this.callClickHandler();
+      try {
+        switch (type) {
+          case "int":
+          case "i":
+            return Number(item);
+          case "intA": // * массив чисел
+            if (String.any(item)) {
+              return JsonEx.parse(item).map((e) => {
+                return this.parseParamItem("int", e);
+              });
+            } else {
+              return [];
             }
-          }
-        }
-      }
-
-      _unTouch() {
-        this._touching = false;
-        if (this.touchInButton()) {
-          return this.applyCoverState();
-        } else {
-          return this.applyNormalState();
-        }
-      }
-
-      touchInButton() {
-        return this.xyInButton(TouchInput.x, TouchInput.y);
-      }
-
-      callClickHandler() {
-        if (this._clickHandlers.length > 0) {
-          return this._clickHandlers.forEach(function(method) {
-            return method();
-          });
-        }
-      }
-
-      updatePosition() {
-        var p;
-        if (!this._localMode) {
-          return;
-        }
-        p = new KDCore.Point(this._realX, this._realY);
-        return this.move(p.screenX(), p.screenY());
-      }
-
-      updateConditionForVisible() {
-        var result;
-        if (this._condition == null) {
-          return;
-        }
-        if (this._manualHided === true) {
-          return;
-        }
-        try {
-          result = this._condition();
-          return this.visible = !result;
-        } catch (error1) {
-          console.warn('wrong condition in button');
-          return this.visible = true;
-        }
-      }
-
-      updateConditionForEnabling() {
-        if (!this._condition2) {
-          return;
-        }
-        if (this._manualDisabled === true) {
-          return;
-        }
-        try {
-          this._disabled = this._condition2();
-          return this.refreshEnDisState();
-        } catch (error1) {
-          console.warn('wrong condition in button for enable state');
-          return this.disable();
-        }
-      }
-
-      setButtonImages(img1, img2, img3, img4) {
-        if (this._images != null) {
-          this._images.forEach(function(img) {
-            if (img != null) {
-              return img.parent.removeChild(img);
+            break;
+          case "bool":
+          case "b":
+          case "e":
+            return eval(item);
+          case "struct":
+          case "s":
+            if (String.any(item)) {
+              return this.parseParameters(JsonEx.parse(item));
+            } else {
+              return null;
             }
-          });
+            break;
+          case "structA": // * массив структур
+            return JsonEx.parse(item).map((e) => {
+              return this.parseParameters(JsonEx.parse(e));
+            });
+          case "str":
+            return item;
+          case "strA":
+            if (String.any(item)) {
+              return JsonEx.parse(item).map((e) => {
+                return this.parseParamItem("str", e);
+              });
+            } else {
+              return [];
+            }
+            break;
+          case "note": // * если несколько строк в тексте
+            try {
+              return JsonEx.parse(item);
+            } catch (error) {
+              e = error;
+              KDCore.warning(e);
+              return item;
+            }
+            break;
+          case "css":
+            return item.toCss();
+          case "color":
+            return KDCore.Color.FromHex(item);
+          default:
+            return item;
         }
-        this._images = [new Sprite(img1), img2 != null ? new Sprite(img2) : void 0, img3 != null ? new Sprite(img3) : void 0, img4 != null ? new Sprite(img4) : void 0];
-        this._images.forEach((img) => {
-          if (img != null) {
-            return this.addChild(img);
-          }
-        });
-        return this.applyNormalState();
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return item;
+      }
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Point;
+  Point = (function() {
+    class Point {
+      constructor(_x = 0, _y = 0) {
+        this._x = _x;
+        this._y = _y;
       }
 
-      applyNormalState() {
-        var ref;
-        this.refreshImages();
-        return (ref = this._images[0]) != null ? ref.visible = true : void 0;
+      clone() {
+        return new Point(this._x, this._y);
       }
 
-      refreshImages() {
-        return this._images.forEach(function(img) {
-          return img != null ? img.visible = false : void 0;
-        });
+      toString() {
+        return "[" + this._x + " ; " + this._y + "]";
       }
 
-      applyCoverState() {
-        this.refreshImages();
-        if (this._images[1] != null) {
-          return this._images[1].visible = true;
-        } else {
-          return this.applyNormalState();
-        }
+      isSame(anotherPoint) {
+        return this.x === anotherPoint.x && this.y === anotherPoint.y;
       }
 
-      applyClickedState() {
-        this.refreshImages();
-        if (this._images[2] != null) {
-          return this._images[2].visible = true;
-        } else {
-          return this.applyNormalState();
-        }
+      convertToCanvas() {
+        return new Point(Graphics.pageToCanvasX(this._x), Graphics.pageToCanvasY(this._y));
       }
 
-      _createText(text, size) {
-        var h, w;
-        if (this._textSprite) {
-          this.removeChild(this._textSprite);
-        }
-        w = Math.round(((size / 10) + 1) * 5 * text.length);
-        h = size + 4;
-        this._textSprite = new Sprite(new Bitmap(w, h));
-        this._textSprite.bitmap.fontSize = size;
-        this._textSprite.bitmap.drawText(text, 0, h / 2, w, 1, 'center');
-        this._textSprite.visible = false;
-        return this.addChild(this._textSprite);
+      convertToMap() {
+        return new Point($gameMap.canvasToMapX(this._x), $gameMap.canvasToMapY(this._y));
       }
 
-      _updateTextPosition() {
+      convertToScreen() {
+        return new Point(this.screenX(), this.screenY());
+      }
+
+      screenX() {
+        var t, tw;
+        t = $gameMap.adjustX(this._x);
+        tw = $gameMap.tileWidth();
+        return Math.round(t * tw + tw / 2);
+      }
+
+      screenY() {
+        var t, th;
+        t = $gameMap.adjustY(this._y);
+        th = $gameMap.tileHeight();
+        return Math.round(t * th + th);
+      }
+
+      round() {
+        return new Point(Math.round(this._x), Math.round(this._y));
+      }
+
+      floor() {
+        return new Point(Math.floor(this._x), Math.floor(this._y));
+      }
+
+      mapPointOnScreen() {
         var nx, ny;
-        if (!this._textSprite) {
-          return;
-        }
-        nx = this._realWidth() / 2 - this._textSprite.width / 2;
-        if (this._textPosition === 0) {
-          ny = -this._textSprite.height;
-        } else {
-          ny = this._realHeight() + this._textSprite.height / 2;
-        }
-        return this._textSprite.move(nx, ny);
+        nx = (this._x * $gameMap.tileWidth()) - ($gameMap.displayX() * $gameMap.tileWidth());
+        ny = (this._y * $gameMap.tileHeight()) - ($gameMap.displayY() * $gameMap.tileHeight());
+        return new Point(nx, ny);
       }
 
-      applyDisableState() {
-        var ref;
-        this.refreshImages();
-        return (ref = this._images[3]) != null ? ref.visible = true : void 0;
+      multiplyBy(val) {
+        return new Point(this._x * val, this._y * val);
       }
 
-      refreshEnDisState() {
-        if (this.isDisabled()) {
-          this.applyDisableState();
-          return this._hideText();
-        } else {
-          if (this._mouseIn === false) {
-            return this.applyNormalState();
-          }
-        }
+      simple() {
+        return new PIXI.Point(this.x, this.y);
       }
 
-      //else
-      //    do @applyCoverState
-      updateComplexTextVisible() {}
-
-      applyScale(mod) {
-        var img, len, q, ref;
-        ref = this._images;
-        for (q = 0, len = ref.length; q < len; q++) {
-          img = ref[q];
-          if (img != null) {
-            img.scale.x = mod;
-            img.scale.y = mod;
-          }
-        }
+      delta(point) {
+        var dx, dy;
+        dx = point.x - this._x;
+        dy = point.y - this._y;
+        return new KDCore.Point(dx, dy);
       }
 
-      static FromSet(imgName, sourceFolder = null) {
-        var button, getterFunc, img0, img1;
-        getterFunc = function(filename) {
-          return ImageManager.loadPicture(filename);
-        };
-        if (sourceFolder != null) {
-          getterFunc = function(filename) {
-            return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
-          };
+      static _getEmpty() {
+        if (Point._emptyPoint == null) {
+          Point._emptyPoint = new Point(0, 0);
         }
-        img0 = getterFunc(imgName + "_00");
-        img1 = getterFunc(imgName + "_01");
-        button = new KDCore.Button();
-        button.setButtonImages(img0, img1, img0, img0);
-        return button;
-      }
-
-      static FromSetFull(imgName, sourceFolder = null) {
-        var button, getterFunc, img0, img1, img2, img3;
-        getterFunc = function(filename) {
-          return ImageManager.loadPicture(filename);
-        };
-        if (sourceFolder != null) {
-          getterFunc = function(filename) {
-            return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
-          };
-        }
-        img0 = getterFunc(imgName + "_00");
-        img1 = getterFunc(imgName + "_01");
-        img2 = getterFunc(imgName + "_02");
-        img3 = getterFunc(imgName + "_03");
-        button = new KDCore.Button();
-        button.setButtonImages(img0, img1, img2, img3);
-        return button;
+        return Point._emptyPoint;
       }
 
     };
-    KDCore.Sprite = (function(superClass) {
-      // * Sprite
-      //------------------------------------------------------------------------------
-      //@[AUTO EXTEND]
-      class Sprite extends superClass {
-        constructor() {
-          super(...arguments);
-        }
 
-        b() {
-          return this.bitmap;
-        }
+    Object.defineProperties(Point.prototype, {
+      x: {
+        get: function() {
+          return this._x;
+        },
+        configurable: true
+      },
+      y: {
+        get: function() {
+          return this._y;
+        },
+        configurable: true
+      }
+    });
 
-        clear() {
-          return this.bitmap.clear();
-        }
+    Object.defineProperties(Point, {
+      Empty: {
+        get: function() {
+          return Point._getEmpty();
+        },
+        configurable: false
+      }
+    });
 
-        add(child) {
-          return this.addChild(child);
-        }
+    Array.prototype.toPoint = function() {
+      return new Point(this[0], this[1]);
+    };
 
-        bNew(w, h) {
-          if (h == null) {
-            h = w;
-          }
-          return this.bitmap = new Bitmap(w, h);
-        }
+    Sprite.prototype.toPoint = function() {
+      return new Point(this.x, this.y);
+    };
 
-        bImg(filename, sourceFolder) {
-          var getterFunc;
-          getterFunc = function(filename) {
-            return ImageManager.loadPicture(filename);
-          };
-          if (sourceFolder != null) {
-            getterFunc = function(filename) {
-              return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
-            };
-          }
-          return this.bitmap = getterFunc(filename);
-        }
+    Game_CharacterBase.prototype.toPoint = function() {
+      return new Point(this.x, this.y);
+    };
 
-        onReady(method) {
-          if (method != null) {
-            return this.bitmap.addLoadListener(method);
-          }
-        }
+    return Point;
 
-        drawText() {
-          return this.bitmap.drawText(...arguments);
-        }
+  }).call(this);
+  //@[EXTEND]
+  return KDCore.Point = Point;
+});
 
-        drawTextFull(text, position = "center") {
-          if (this.textSettingsPosition != null) {
-            position = this.textSettingsPosition;
-          }
-          return this.bitmap.drawTextFull(text, position);
-        }
 
-        //?DEPRECATED
-        drawTextWithSettings(text) {
-          this.clear();
-          this.drawTextFull(text, this.textSettingsPosition);
-        }
-
-        //? x, y, icon, size
-        drawIcon() {
-          return this.bitmap.drawIcon(...arguments);
-        }
-
-        moveByJson(settings) {
-          var pos;
-          pos = KDCore.Utils.getPositionPointFromJSON(settings);
-          return this.move(pos.x, pos.y);
-        }
-
-        applyTextSettingsByJson(sprite, settings) {
-          this.applyTextSettingsByExtraSettings(sprite, settings.text);
-        }
-
-        applyTextSettingsByExtraSettings(sprite, s) {
-          sprite.move(s.marginX, s.marginY);
-          sprite.b().fontSize = s.fontSize;
-          sprite.b().textColor = KDCore.Color.FromHex(s.textColor).CSS;
-          sprite.b().outlineWidth = s.outlineWidth;
-          if (s.outlineColor != null) {
-            sprite.b().outlineColor = KDCore.Color.FromHex(s.outlineColor).CSS;
-          }
-          if (s.fontFace != null) {
-            sprite.b().fontFace = s.fontFace;
-          }
-          sprite.b().fontItalic = s.fontItalic;
-          sprite.visible = s.visible;
-        }
-
-        isReady() {
-          var q, ref;
-          if (this.bitmap != null) {
-            if (!this.bitmap.isReady()) {
-              return false;
-            }
-          }
-          for (i = q = 0, ref = this.children.length; (0 <= ref ? q < ref : q > ref); i = 0 <= ref ? ++q : --q) {
-            if (!this.children[i].bitmap.isReady()) {
-              return false;
-            }
-          }
-          return true;
-        }
-
-        inPosition(point) {
-          return this.isContainsPoint(point);
-        }
-
-        isUnderMouse() {
-          return this.inPosition(TouchInput);
-        }
-
-        // * Из параметров плагина
-        applyFontParam(font) {
-          var b;
-          if (font == null) {
-            return;
-          }
-          b = this.b();
-          if (font.size != null) {
-            b.fontSize = font.size;
-          }
-          if (!String.isNullOrEmpty(font.face)) {
-            b.fontFace = font.face;
-          }
-          if (font.italic != null) {
-            b.fontItalic = font.italic;
-          }
-        }
-
-        applyOutlineParam(outline) {
-          var b;
-          if (outline == null) {
-            return;
-          }
-          b = this.b();
-          if (outline.width != null) {
-            b.outlineWidth = outline.width;
-          }
-          if (!String.isNullOrEmpty(outline.color)) {
-            b.outlineColor = outline.color;
-          }
-        }
-
-        static FromImg(filename, sourceFolder) {
-          var s;
-          s = new KDCore.Sprite();
-          s.bImg(filename, sourceFolder);
-          return s;
-        }
-
-        static FromBitmap(w, h) {
-          var s;
-          s = new KDCore.Sprite();
-          s.bNew(w, h);
-          return s;
-        }
-
-        static FromTextSettings(settings) {
-          var s;
-          s = KDCore.Sprite.FromBitmap(settings.textBoxWidth, settings.textBoxHeight);
-          s.applyTextSettingsByExtraSettings(s, settings);
-          s.textSettingsPosition = settings.position;
-          return s;
-        }
-
-        // * Загрузчик из параметров плагина (безопасный)
-        static FromParams(pluginParams) {
-          var e, margins, s, size;
-          try {
-            size = pluginParams.size;
-            s = KDCore.Sprite.FromBitmap(size.w, size.h);
-            s.textSettingsPosition = pluginParams.alignment;
-            margins = pluginParams.margins;
-            if (margins != null) {
-              s.move(margins.x, margins.y);
-            }
-            s.applyFontParam(pluginParams.font);
-            s.applyOutlineParam(pluginParams.outline);
-            if (!String.isNullOrEmpty(pluginParams.textColor)) {
-              s.b().textColor = pluginParams.textColor;
-            }
-            if (pluginParams.visible != null) {
-              s.visible = pluginParams.visible;
-            }
-            return s;
-          } catch (error1) {
-            e = error1;
-            console.warn('Something wrong with Text Settings!', e);
-            return KDCore.Sprite.FromBitmap(60, 30);
-          }
-        }
-
-      };
-
-      return Sprite;
-
-    }).call(this, Sprite);
-    // * Button M
-    //------------------------------------------------------------------------------
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  return KDCore.Sprite = (function(superClass) {
     //@[AUTO EXTEND]
-    // * Button Mini - упрощённый класс Sprite_XButton (KDCore.Button)
-
-      // * Принимает название файла изображения кнопки без _00
-    // * Названия изображения должны быть в стандартном формате _00, _01, [_03]
-    // * _02 - не используются в этом классе
-
-      // * Класс использует глобальную временную переменную для определения находится ли мышь в зоне кнопки
-
-      // * Если isFull - true, значит нужен _03
-    KDCore.ButtonM = class ButtonM extends KDCore.Sprite {
-      constructor(filename, isFull = false, sourceFolder = null) {
-        super();
-        this._bitmaps = [];
-        this._disabled = false;
-        this._isTriggered = false;
-        // * Когда произошло нажатие на кнопку
-        this._handler = null;
-        this._isCanBeClicked = true;
-        this._isManualHoverMode = false;
-        this._isManualSelected = false;
-        this._loadBitmaps(filename, isFull, sourceFolder);
-        this._setImageState(0);
-        this._createThread();
-      }
-
-      setManualHover() {
-        return this._isManualHoverMode = true;
-      }
-
-      disableManualHover() {
-        return this._isManualHoverMode = false;
-      }
-
-      setManualSelected(_isManualSelected) {
-        this._isManualSelected = _isManualSelected;
-      }
-
-      enableClick() {
-        return this._isCanBeClicked = true;
-      }
-
-      disableClick() {
-        return this._isCanBeClicked = false;
-      }
-
-      desaturate() {
-        this.filters = [new PIXI.filters.ColorMatrixFilter()];
-        this.filters[0].desaturate();
-      }
-
-      isMouseIn() {
-        if (this._isManualHoverMode === true) {
-          return this._isManualSelected;
-        } else {
-          return this.inPosition(TouchInput);
-        }
-      }
-
-      isActive() {
-        if (this._isCanBeClicked === false) {
-          return false;
-        }
-        if (this.parent != null) {
-          return this.parent.visible === true && this.visible === true;
-        } else {
-          return this.visible === true;
-        }
-      }
-
-      isDisabled() {
-        return this._disabled === true;
-      }
-
-      addClickHandler(_handler) {
-        this._handler = _handler;
-      }
-
-      clearClickHandler() {
-        return this._handler = null;
-      }
-
-      // * Воспроизводит визуальный эффект нажатия
-      simulateClick() {
-        if (!this.isActive()) {
-          return;
-        }
-        if (this.isDisabled()) {
-          return;
-        }
-        if (this.isMouseIn()) {
-          return;
-        }
-        this._startSimulation();
-      }
-
-      isEnabled() {
-        return !this.isDisabled();
-      }
-
-      refreshState(isEnable = true) {
-        if (isEnable === true) {
-          if (this.isDisabled()) {
-            this.enable();
-          }
-        } else {
-          if (this.isEnabled()) {
-            this.disable();
-          }
-        }
-      }
-
-      disable() {
-        this._disabled = true;
-        return this._setImageState(2);
-      }
-
-      enable() {
-        this._disabled = false;
-        return this._setImageState(0);
-      }
-
-      click() {
-        if (this._handler != null) {
-          return this._handler();
-        }
-      }
-
-      update() {
-        super.update();
-        return this._updateMain();
-      }
-
-    };
-    (function() {      
-      //╒═════════════════════════════════════════════════════════════════════════╛
-      // ■ ButtonM Implementation
-      //╒═════════════════════════════════════════════════════════════════════════╛
-      //---------------------------------------------------------------------------
-      var _, alias_SM_isAnyButtonPressed, alias_SM_onMapLoaded;
-      //@[DEFINES]
-      _ = KDCore.ButtonM.prototype;
-      _._loadBitmaps = function(filename, isFull = false, sourceFolder = null) {
-        var getterFunc;
-        getterFunc = this._getGetter(sourceFolder);
-        this._bitmaps.push(getterFunc(filename + '_00'));
-        this._bitmaps.push(getterFunc(filename + '_01'));
-        if (isFull) {
-          this._bitmaps.push(getterFunc(filename + '_03'));
-        }
-      };
-      _._getGetter = function(sourceFolder = null) {
-        var getterFunc;
-        getterFunc = function(filename) {
-          return ImageManager.loadPicture(filename);
-        };
-        if (sourceFolder !== null) {
-          getterFunc = function(filename) {
-            return ImageManager.loadBitmap('img/' + sourceFolder + '/', filename);
-          };
-        }
-        return getterFunc;
-      };
-      _._setImageState = function(index = 0) {
-        if (this._bitmaps[index] == null) {
-          index = 0;
-        }
-        this.bitmap = this._bitmaps[index];
-        this._lastState = index;
-      };
-      _._createThread = function() {
-        this.hoverThread = new KDCore.TimedUpdate(3, this._updateHover.bind(this));
-        this.hoverThread.applyTimeRange(-1, 1);
-        this.hoverThread.call();
-      };
-      //?[DYNAMIC]
-      _._updateMain = function() {
-        this._updateMouseLogic();
-        if (!this.isActive()) {
-          if (($gameTemp.kdButtonUnderMouse != null) && $gameTemp.kdButtonUnderMouse === this) {
-            return $gameTemp.kdButtonUnderMouse = null;
-          }
-        }
-      };
-      _._updateMouseLogic = function() {
-        this.hoverThread.update();
-        return this._updateMouseClick();
-      };
-      _._updateHover = function() {
-        if (!this.isActive()) {
-          return;
-        }
-        // * чтобы эффект нажатия не прекратить
-        if (this._isTriggered === true) {
-          return;
-        }
-        if (this.isMouseIn()) {
-          if (this._lastState !== 1) {
-            if (!this.isDisabled()) {
-              this._setImageState(1);
-            }
-            $gameTemp.kdButtonUnderMouse = this;
-          }
-        } else {
-          if (this._lastState !== 0) {
-            if (!this.isDisabled()) {
-              this._setImageState(0);
-            }
-            if ($gameTemp.kdButtonUnderMouse === this) {
-              $gameTemp.kdButtonUnderMouse = null;
-            }
-          } else if ($gameTemp.kdButtonUnderMouse === this) {
-            $gameTemp.kdButtonUnderMouse = null;
-          }
-        }
-      };
-      _._updateMouseClick = function() {
-        if (!this.isActive()) {
-          return;
-        }
-        if (this.isDisabled()) {
-          return;
-        }
-        if (TouchInput.isTriggered() && this.isMouseIn()) {
-          this._isTriggered = true;
-          this._setImageState(0);
-        }
-        if (this._isTriggered === true) {
-          if (TouchInput.isReleased()) {
-            this._isTriggered = false;
-            if (this.isMouseIn()) {
-              this.click();
-            }
-          }
-        }
-      };
-      _._startSimulation = function() {
-        this._setImageState(1);
-        this._simulateThread = new KDCore.TimedUpdate(10, () => {
-          return this._setImageState(0);
-        });
-        this._simulateThread.once();
-        return this._updateMain = this._updateMouseClickSimulated;
-      };
-      _._updateMouseClickSimulated = function() {
-        this._simulateThread.update();
-        if (!this._simulateThread.isAlive()) {
-          this._simulateThread = null;
-          this._updateMain = this._updateMouseLogic;
-        }
-      };
-      // * Теперь при нажатии на любую кнопку, игрок не будет ходить по карте
-
-      //@[ALIAS]
-      alias_SM_isAnyButtonPressed = Scene_Map.prototype.isAnyButtonPressed;
-      Scene_Map.prototype.isAnyButtonPressed = function() {
-        if ($gameTemp.kdButtonUnderMouse != null) {
-          return true;
-        } else {
-          return alias_SM_isAnyButtonPressed.call(this);
-        }
-      };
-      //@[ALIAS]
-      alias_SM_onMapLoaded = Scene_Map.prototype.onMapLoaded;
-      Scene_Map.prototype.onMapLoaded = function() {
-        $gameTemp.kdButtonUnderMouse = null;
-        return alias_SM_onMapLoaded.call(this);
-      };
-    })();
-    // ■ END ButtonM Implementation
-    //---------------------------------------------------------------------------
-
-      // * Button Mini User - класс с определением файла каждого состояния отдельно
-    // * Принимает теже аргументы, только заместо имени файла, три изображения (имени)
-    // ? states = { main, hover, disabled }
-    KDCore.ButtonMU = class ButtonMU extends KDCore.ButtonM {
+    class Sprite extends superClass {
       constructor() {
         super(...arguments);
       }
 
-      //$[OVER]
-      _loadBitmaps(states, isFull = true, sourceFolder = null) {
+      b() {
+        return this.bitmap;
+      }
+
+      clear() {
+        return this.bitmap.clear();
+      }
+
+      add(child) {
+        return this.addChild(child);
+      }
+
+      bNew(w, h) {
+        if (h == null) {
+          h = w;
+        }
+        return this.bitmap = new Bitmap(w, h);
+      }
+
+      bImg(filename, sourceFolder) {
         var getterFunc;
-        getterFunc = this._getGetter(sourceFolder);
-        this._bitmaps.push(getterFunc(states.main));
-        this._bitmaps.push(getterFunc(states.hover));
-        // * Optional 03
-        if (String.any(states.disabled)) {
-          this._bitmaps.push(getterFunc(states.disabled));
+        getterFunc = function(filename) {
+          return ImageManager.loadPicture(filename);
+        };
+        if (sourceFolder != null) {
+          getterFunc = function(filename) {
+            return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
+          };
+        }
+        return this.bitmap = getterFunc(filename);
+      }
+
+      onReady(method) {
+        if (method != null) {
+          return this.bitmap.addLoadListener(method);
         }
       }
 
-    };
-    
-    //@[EXTENSION TO GLOBAL]
-    //------------------------------------------------------------------------------
-    KDCore.SDK = SDK;
-    KDCore.Color = Color;
-    KDCore.DevLog = DevLog;
-    KDCore.Point = Point;
-    KDCore.BitmapSrc = BitmapSrc;
-    //? SOME KDCORE METHODS
-    //--------------------------------------------------------------------------------
-    KDCore.isMV = function() {
-      return Utils.RPGMAKER_NAME.contains("MV");
-    };
-    KDCore.isMZ = function() {
-      return !KDCore.isMV();
-    };
-    KDCore.warning = function(msg, error) {
-      if (msg != null) {
-        console.warn(msg);
+      drawText() {
+        return this.bitmap.drawText(...arguments);
       }
-      if (error != null) {
-        console.warn(error);
+
+      drawTextFull(text, position = "center") {
+        if (this.textSettingsPosition != null) {
+          position = this.textSettingsPosition;
+        }
+        return this.bitmap.drawTextFull(text, position);
       }
-    };
-    (function() {      //--------------------------------------------------------------------------------
-      // Word Wrapping =================================================================
-      //--------------------------------------------------------------------------------
-      //?NEW
-      Window_Base.prototype.drawTextExWithWordWrap = function(text, x, y, width, maxLines) {
-        var maxWidth, wrappedText;
-        maxWidth = this.contentsWidth();
-        wrappedText = Window_Message.prototype.pWordWrap.call(this, text, width || maxWidth, maxLines);
-        this.drawTextEx(wrappedText, x, y);
-      };
-      //?NEW
-      Window_Message.prototype.pWordWrap = function(text, maxWidth, maxLines) {
-        var j, line, lines, newLines, q, ref, ref1, result, spaceLeft, spaceWidth, u, wordWidth, wordWidthWithSpace, words;
-        lines = text.split('\n');
-        maxWidth = maxWidth;
-        spaceWidth = this.contents.measureTextWidth(' ');
-        result = '';
-        newLines = 1;
-        for (i = q = 0, ref = lines.length; (0 <= ref ? q < ref : q > ref); i = 0 <= ref ? ++q : --q) {
-          spaceLeft = maxWidth;
-          line = lines[i];
-          words = line.split(' ');
-          for (j = u = 0, ref1 = words.length; (0 <= ref1 ? u < ref1 : u > ref1); j = 0 <= ref1 ? ++u : --u) {
-            wordWidth = this.contents.measureTextWidth(words[j]);
-            wordWidthWithSpace = wordWidth + spaceWidth;
-            if (j === 0 || wordWidthWithSpace > spaceLeft) {
-              if (j > 0) {
-                if (maxLines === newLines) {
-                  return result;
-                }
-                result += '\n';
-                newLines++;
-              }
-              result += words[j];
-              spaceLeft = maxWidth - wordWidth;
-              if (j === 0 && line.match(/\\n\w*\s*<\s*\\n\[\w*\s*\]\s*>*/gi)) {
-                spaceLeft += 200;
-              }
-            } else {
-              spaceLeft -= wordWidthWithSpace;
-              result += ' ' + words[j];
-            }
-          }
-          if (i < lines.length - 1) {
-            result += '\n';
+
+      //?DEPRECATED
+      drawTextWithSettings(text) {
+        this.clear();
+        this.drawTextFull(text, this.textSettingsPosition);
+      }
+
+      //? x, y, icon, size
+      drawIcon() {
+        return this.bitmap.drawIcon(...arguments);
+      }
+
+      moveByJson(settings) {
+        var pos;
+        pos = KDCore.Utils.getPositionPointFromJSON(settings);
+        return this.move(pos.x, pos.y);
+      }
+
+      applyTextSettingsByJson(sprite, settings) {
+        this.applyTextSettingsByExtraSettings(sprite, settings.text);
+      }
+
+      applyTextSettingsByExtraSettings(sprite, s) {
+        sprite.move(s.marginX, s.marginY);
+        sprite.b().fontSize = s.fontSize;
+        sprite.b().textColor = KDCore.Color.FromHex(s.textColor).CSS;
+        sprite.b().outlineWidth = s.outlineWidth;
+        if (s.outlineColor != null) {
+          sprite.b().outlineColor = KDCore.Color.FromHex(s.outlineColor).CSS;
+        }
+        if (s.fontFace != null) {
+          sprite.b().fontFace = s.fontFace;
+        }
+        sprite.b().fontItalic = s.fontItalic;
+        sprite.visible = s.visible;
+      }
+
+      isReady() {
+        var i, j, ref;
+        if (this.bitmap != null) {
+          if (!this.bitmap.isReady()) {
+            return false;
           }
         }
-        return result;
-      };
-    })();
-    //--------------------------------------------------------------------------------
-    // MV TouchInput Extension =======================================================
-    //--------------------------------------------------------------------------------
-
-    // * Для совместимости MV и MZ
-    //TouchInput.getMousePosition = -> new KDCore.Point(TouchInput.x, TouchInput.y)
-    TouchInput.toMapPoint = function() {
-      return this.toPoint().convertToMap();
-    };
-    //?SMouse better alternative
-    (function() {
-      var alias_SM_processMapTouch, alias_TIOMM;
-      if (KDCore.isMZ()) {
-        return;
-      }
-      
-      // * Для ButtonM
-      //@[ALIAS]
-      alias_SM_processMapTouch = Scene_Map.prototype.processMapTouch;
-      Scene_Map.prototype.processMapTouch = function() {
-        if ($gameTemp.kdButtonUnderMouse != null) {
-
-        } else {
-          return alias_SM_processMapTouch.call(this);
+        for (i = j = 0, ref = this.children.length; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
+          if (!this.children[i].bitmap.isReady()) {
+            return false;
+          }
         }
-      };
-      //@[ALIAS]
-      alias_TIOMM = TouchInput._onMouseMove;
-      TouchInput._onMouseMove = function(event) {
-        var x, y;
-        alias_TIOMM.call(this, event);
-        x = Graphics.pageToCanvasX(event.pageX);
-        y = Graphics.pageToCanvasY(event.pageY);
-        if (Graphics.isInsideCanvas(x, y)) {
-          return this._onHover(x, y);
-        }
-      };
-      
-      //?NEW, from MZ
-      TouchInput._onHover = function(_x, _y) {
-        this._x = _x;
-        this._y = _y;
-      };
-    })();
-    (function() {      // * VirtualInput для RPG Maker MV
-      //$[OVER]
-      //TouchInput.getMousePosition = ->
-      //    new KDCore.Point(TouchInput._x, TouchInput._y)
-      var ALIAS__clear, ALIAS__update, _;
-      if (KDCore.isMZ()) {
-        return;
+        return true;
       }
-      //@[DEFINES]
-      _ = Input;
-      //@[ALIAS]
-      ALIAS__clear = _.clear;
-      _.clear = function() {
-        ALIAS__clear.call(this);
-        return this._virtualButton = null;
-      };
-      //@[ALIAS]
-      ALIAS__update = _.update;
-      _.update = function() {
-        ALIAS__update.call(this);
-        if (this._virtualButton == null) {
+
+      inPosition(point) {
+        return this.isContainsPoint(point);
+      }
+
+      isUnderMouse() {
+        return this.inPosition(TouchInput);
+      }
+
+      // * Из параметров плагина
+      applyFontParam(font) {
+        var b;
+        if (font == null) {
           return;
         }
-        this._latestButton = this._virtualButton;
-        this._pressedTime = 0;
-        return this._virtualButton = null;
-      };
-      _.virtualClick = function(buttonName) {
-        return this._virtualButton = buttonName;
-      };
-    })();
-    (function() {      // * Right mouse pressed
-      // * Определение когда правая (вторая) кнопка мыши зажата и удерживается
-      var ALIAS___onMouseUp, ALIAS___onRightButtonDown, ALIAS__clear, ALIAS__update, _;
-      //@[DEFINES]
-      _ = TouchInput;
-      //@[ALIAS]
-      ALIAS__clear = _.clear;
-      _.clear = function() {
-        ALIAS__clear.call(this);
-        this._kdMousePressed2 = false;
-        this._kdPressedTime2 = 0;
-      };
-      //@[ALIAS]
-      ALIAS___onRightButtonDown = _._onRightButtonDown;
-      _._onRightButtonDown = function(event) {
-        var check;
-        ALIAS___onRightButtonDown.call(this, event);
-        // * Это значит что ALIAS метод прошёл (верные X и Y в Canvas)
-        if (KDCore.isMZ()) {
-          check = this._newState.cancelled === true;
-        } else {
-          check = this._events.cancelled === true;
+        b = this.b();
+        if (font.size != null) {
+          b.fontSize = font.size;
         }
-        if (check === true) {
-          this._kdMousePressed2 = true;
-          this._kdPressedTime2 = 0;
+        if (!String.isNullOrEmpty(font.face)) {
+          b.fontFace = font.face;
         }
-      };
-      //@[ALIAS]
-      ALIAS___onMouseUp = _._onMouseUp;
-      _._onMouseUp = function(event) {
-        ALIAS___onMouseUp.call(this, event);
-        if (event.button === 2) {
-          this._kdMousePressed2 = false;
+        if (font.italic != null) {
+          b.fontItalic = font.italic;
         }
-      };
-      //@[ALIAS]
-      ALIAS__update = _.update;
-      _.update = function() {
-        ALIAS__update.call(this);
-        if (this.kdIsPressed2()) {
-          return this._kdPressedTime2++;
+      }
+
+      applyOutlineParam(outline) {
+        var b;
+        if (outline == null) {
+          return;
         }
-      };
-      //?[NEW]
-      _.kdIsPressed2 = function() {
-        return this._kdMousePressed2 === true;
-      };
-    })();
-    (function() {      //--------------------------------------------------------------------------------
-      // MV MZ Methods Extension =======================================================
-      //--------------------------------------------------------------------------------
-      if (KDCore.isMZ()) {
+        b = this.b();
+        if (outline.width != null) {
+          b.outlineWidth = outline.width;
+        }
+        if (!String.isNullOrEmpty(outline.color)) {
+          b.outlineColor = outline.color;
+        }
+      }
+
+      static FromImg(filename, sourceFolder) {
+        var s;
+        s = new KDCore.Sprite();
+        s.bImg(filename, sourceFolder);
+        return s;
+      }
+
+      static FromBitmap(w, h) {
+        var s;
+        s = new KDCore.Sprite();
+        s.bNew(w, h);
+        return s;
+      }
+
+      static FromTextSettings(settings) {
+        var s;
+        s = KDCore.Sprite.FromBitmap(settings.textBoxWidth, settings.textBoxHeight);
+        s.applyTextSettingsByExtraSettings(s, settings);
+        s.textSettingsPosition = settings.position;
+        return s;
+      }
+
+      // * Загрузчик из параметров плагина (безопасный)
+      static FromParams(pluginParams) {
+        var e, margins, s, size;
+        try {
+          size = pluginParams.size;
+          s = KDCore.Sprite.FromBitmap(size.w, size.h);
+          s.textSettingsPosition = pluginParams.alignment;
+          margins = pluginParams.margins;
+          if (margins != null) {
+            s.move(margins.x, margins.y);
+          }
+          s.applyFontParam(pluginParams.font);
+          s.applyOutlineParam(pluginParams.outline);
+          if (!String.isNullOrEmpty(pluginParams.textColor)) {
+            s.b().textColor = pluginParams.textColor;
+          }
+          if (pluginParams.visible != null) {
+            s.visible = pluginParams.visible;
+          }
+          return s;
+        } catch (error) {
+          e = error;
+          console.warn('Something wrong with Text Settings!', e);
+          return KDCore.Sprite.FromBitmap(60, 30);
+        }
+      }
+
+    };
+
+    return Sprite;
+
+  }).call(this, Sprite);
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  //@[AUTO EXTEND]
+  return KDCore.TimedUpdate = class TimedUpdate {
+    constructor(interval, method) {
+      this.interval = interval;
+      this.method = method;
+      this._timer = 0;
+      this._once = false;
+    }
+
+    update() {
+      if (this.interval == null) {
         return;
       }
-      (function() {        //╒═════════════════════════════════════════════════════════════════════════╛
-        // ■ Window_Base.coffee
-        //╒═════════════════════════════════════════════════════════════════════════╛
-        //---------------------------------------------------------------------------
-        var ALIAS__initialize, _;
-        //@[DEFINES]
-        _ = Window_Base.prototype;
-        // * Чтоб можно было Rectangle принимать в конструктор
-        //@[ALIAS]
-        ALIAS__initialize = _.initialize;
-        _.initialize = function(x, y, w, h) {
-          if (x instanceof PIXI.Rectangle) {
-            return ALIAS__initialize.call(this, x.x, x.y, x.width, x.height);
-          } else {
-            return ALIAS__initialize.call(this, ...arguments);
+      if (this._timer++ >= this.interval) {
+        this.call();
+        this._timer = 0;
+        if (this._once === true) {
+          return this.stop();
+        }
+      }
+    }
+
+    once() {
+      return this._once = true;
+    }
+
+    onUpdate(method) {
+      this.method = method;
+    }
+
+    stop() {
+      return this.interval = null;
+    }
+
+    isAlive() {
+      return this.interval != null;
+    }
+
+    // * Рандомизировать интервал @interval (-min, +max)
+    applyTimeRange(min, max) {
+      var value;
+      if (!this.isAlive()) {
+        return;
+      }
+      value = KDCore.SDK.rand(min, max);
+      return this.interval += value;
+    }
+
+    call() {
+      if (this.method != null) {
+        return this.method();
+      }
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  
+    // * Button (Sprite_XButton)
+
+    //@[AUTO EXTEND]
+  //?DEPRECATED
+  return KDCore.Button = class Button extends Sprite {
+    constructor() {
+      super();
+      this._mouseIn = false;
+      this._touching = false;
+      this._slowUpdateActive = false;
+      this._localMode = false;
+      this._images = [];
+      this._checkAlpha = false;
+      this._textSprite = null;
+      this._textPosition = 0;
+      this._override = false; // * TouchClick in game messages not work anymore if TRUE
+      this._clickHandlers = [];
+      this._manualHided = false;
+      this._manualDisabled = false;
+      this._condition = null; // * Условие для Visible
+      this._condition2 = null; // * Условие для Enable \ Disable
+      this._disabled = false;
+      this._infoData = null;
+      this._isNeedShowText = false;
+      return;
+    }
+
+    isMouseInButton() {
+      return this._mouseIn === true;
+    }
+
+    isActive() {
+      return this.visible === true;
+    }
+
+    activateSlowUpdate() {
+      return this._slowUpdateActive = true;
+    }
+
+    setLocalMode() {
+      this._realX = this.x;
+      this._realY = this.y;
+      return this._localMode = true;
+    }
+
+    setAlphaMode() {
+      return this._checkAlpha = true;
+    }
+
+    // * above, below
+    setTextPosition(position) {
+      return this._textPosition = position;
+    }
+
+    setHelpText(text, size) {
+      return this._createText(text, size);
+    }
+
+    setInfoData(data) {
+      return this._infoData = data;
+    }
+
+    setOverrideMode() {
+      return this._override = true;
+    }
+
+    isOverride() {
+      return this._override === true && this.isActive() && this.touchInButton();
+    }
+
+    isDisabled() {
+      return this._disabled === true;
+    }
+
+    isEnabled() {
+      return !this.isDisabled();
+    }
+
+    isNeedShowText() {
+      return this._isNeedShowText === true;
+    }
+
+    addClickHandler(method) {
+      return this._clickHandlers.push(method);
+    }
+
+    clearClickHandlers() {
+      return this._clickHandlers = [];
+    }
+
+    isLocalMode() {
+      return this._localMode === true;
+    }
+
+    setCondition(method) {
+      return this._condition = method;
+    }
+
+    setConditionForDisable(method) {
+      return this._condition2 = method;
+    }
+
+    getInfoData() {
+      return this._infoData;
+    }
+
+    simulateClick() { //?NEW
+      return this.applyClickedState();
+    }
+
+    simulateClickManual() { //?NEW
+      this.simulateClick();
+      return setTimeout((() => {
+        try {
+          return this.applyNormalState();
+        } catch (error) {
+
+        }
+      }), 50);
+    }
+
+    prepare() { //?NEW
+      return this.slowUpdate();
+    }
+
+    realX() {
+      if (this.isLocalMode()) {
+        return this._realX;
+      } else {
+        return this.x;
+      }
+    }
+
+    realY() {
+      if (this.isLocalMode()) {
+        return this._realY;
+      } else {
+        return this.y;
+      }
+    }
+
+    show() {
+      this.visible = true;
+      return this._manualHided = false;
+    }
+
+    hide() {
+      this.visible = false;
+      return this._manualHided = true;
+    }
+
+    disable() {
+      this._disabled = true;
+      this._manualDisabled = true;
+      this.refreshEnDisState();
+      return this._mouseIn = false;
+    }
+
+    enable() {
+      this._disabled = false;
+      this._manualDisabled = false;
+      return this.refreshEnDisState();
+    }
+
+    update() {
+      super.update();
+      if (this._destroyed === true) {
+        return;
+      }
+      this.updateMouseClick();
+      this.updatePosition();
+      if (!this._slowUpdateActive) {
+        this.slowUpdate();
+      }
+      return this.updateComplexTextVisible();
+    }
+
+    slowUpdate() {
+      if (this._destroyed === true) {
+        return;
+      }
+      this.updateMouseTracking();
+      this.updateConditionForVisible();
+      return this.updateConditionForEnabling();
+    }
+
+    updateMouseTracking() {
+      if (!this.isActive()) {
+        return;
+      }
+      if (this.isDisabled()) {
+        return;
+      }
+      if (this.cursorInButton()) {
+        this._onMouseEnter();
+        return this._mouseIn = true;
+      } else {
+        this._onMouseLeave();
+        return this._mouseIn = false;
+      }
+    }
+
+    // * In MZ TouchInput always have X,Y
+    cursorInButton() {
+      return this.touchInButton();
+    }
+
+    xyInButton(x, y) {
+      var inRect, rect, rx, ry;
+      rx = KDCore.SDK.toGlobalCoord(this, 'x');
+      ry = KDCore.SDK.toGlobalCoord(this, 'y');
+      rect = new PIXI.Rectangle(rx, ry, this._realWidth(), this._realHeight());
+      inRect = rect.contains(x, y);
+      if (inRect === true && this._checkAlpha === true) {
+        return this._checkAlphaPixel(x - rx, y - ry);
+      } else {
+        return inRect;
+      }
+    }
+
+    _realWidth() {
+      if (this._hasImage()) {
+        return this._mainImage().width;
+      } else {
+        return this.width;
+      }
+    }
+
+    _hasImage() {
+      return this._mainImage() != null;
+    }
+
+    _mainImage() {
+      return this._images[0];
+    }
+
+    _realHeight() {
+      if (this._hasImage()) {
+        return this._mainImage().height;
+      } else {
+        return this.height;
+      }
+    }
+
+    _checkAlphaPixel(x, y) {
+      var pixel;
+      pixel = this._hasImage() ? this._mainImage().bitmap.getAlphaPixel(x, y) : this.bitmap.getAlphaPixel(x, y);
+      return pixel >= 200;
+    }
+
+    _onMouseEnter() {
+      if (this._mouseIn === true) {
+        return;
+      }
+      if (!this.isDisabled()) {
+        this.applyCoverState();
+      }
+      this._showText();
+      if (this.getInfoData() != null) {
+        return this._startComplexTimer();
+      }
+    }
+
+    _onMouseLeave() {
+      if (this._mouseIn === false) {
+        return;
+      }
+      if (!this.isDisabled()) {
+        this.applyNormalState();
+      }
+      this._hideText();
+      return this._stopComplexTimer();
+    }
+
+    _showText() {
+      if (this._textSprite == null) {
+        return;
+      }
+      this._updateTextPosition();
+      return this._textSprite.visible = true;
+    }
+
+    _hideText() {
+      if (this._textSprite == null) {
+        return;
+      }
+      return this._textSprite.visible = false;
+    }
+
+    _startComplexTimer() {
+      this._stopComplexTimer();
+      return this._cTimer = setTimeout((() => {
+        if (this._mouseIn === true) {
+          return this._isNeedShowText = true;
+        }
+      }), 1000);
+    }
+
+    _stopComplexTimer() {
+      if (this._cTimer != null) {
+        clearTimeout(this._cTimer);
+      }
+      return this._isNeedShowText = false;
+    }
+
+    updateMouseClick() {
+      if (!this.isActive()) {
+        this._unTouch();
+        return;
+      }
+      if (this.isDisabled()) {
+        return;
+      }
+      if (TouchInput.isTriggered() && this.touchInButton()) {
+        this._touching = true;
+        this.applyClickedState();
+      }
+      if (this._touching === true) {
+        if (TouchInput.isReleased() || !this.touchInButton()) {
+          this._unTouch();
+          if (TouchInput.isReleased()) {
+            return this.callClickHandler();
+          }
+        }
+      }
+    }
+
+    _unTouch() {
+      this._touching = false;
+      if (this.touchInButton()) {
+        return this.applyCoverState();
+      } else {
+        return this.applyNormalState();
+      }
+    }
+
+    touchInButton() {
+      return this.xyInButton(TouchInput.x, TouchInput.y);
+    }
+
+    callClickHandler() {
+      if (this._clickHandlers.length > 0) {
+        return this._clickHandlers.forEach(function(method) {
+          return method();
+        });
+      }
+    }
+
+    updatePosition() {
+      var p;
+      if (!this._localMode) {
+        return;
+      }
+      p = new KDCore.Point(this._realX, this._realY);
+      return this.move(p.screenX(), p.screenY());
+    }
+
+    updateConditionForVisible() {
+      var result;
+      if (this._condition == null) {
+        return;
+      }
+      if (this._manualHided === true) {
+        return;
+      }
+      try {
+        result = this._condition();
+        return this.visible = !result;
+      } catch (error) {
+        console.warn('wrong condition in button');
+        return this.visible = true;
+      }
+    }
+
+    updateConditionForEnabling() {
+      if (!this._condition2) {
+        return;
+      }
+      if (this._manualDisabled === true) {
+        return;
+      }
+      try {
+        this._disabled = this._condition2();
+        return this.refreshEnDisState();
+      } catch (error) {
+        console.warn('wrong condition in button for enable state');
+        return this.disable();
+      }
+    }
+
+    setButtonImages(img1, img2, img3, img4) {
+      if (this._images != null) {
+        this._images.forEach(function(img) {
+          if (img != null) {
+            return img.parent.removeChild(img);
+          }
+        });
+      }
+      this._images = [new Sprite(img1), img2 != null ? new Sprite(img2) : void 0, img3 != null ? new Sprite(img3) : void 0, img4 != null ? new Sprite(img4) : void 0];
+      this._images.forEach((img) => {
+        if (img != null) {
+          return this.addChild(img);
+        }
+      });
+      return this.applyNormalState();
+    }
+
+    applyNormalState() {
+      var ref;
+      this.refreshImages();
+      return (ref = this._images[0]) != null ? ref.visible = true : void 0;
+    }
+
+    refreshImages() {
+      return this._images.forEach(function(img) {
+        return img != null ? img.visible = false : void 0;
+      });
+    }
+
+    applyCoverState() {
+      this.refreshImages();
+      if (this._images[1] != null) {
+        return this._images[1].visible = true;
+      } else {
+        return this.applyNormalState();
+      }
+    }
+
+    applyClickedState() {
+      this.refreshImages();
+      if (this._images[2] != null) {
+        return this._images[2].visible = true;
+      } else {
+        return this.applyNormalState();
+      }
+    }
+
+    _createText(text, size) {
+      var h, w;
+      if (this._textSprite) {
+        this.removeChild(this._textSprite);
+      }
+      w = Math.round(((size / 10) + 1) * 5 * text.length);
+      h = size + 4;
+      this._textSprite = new Sprite(new Bitmap(w, h));
+      this._textSprite.bitmap.fontSize = size;
+      this._textSprite.bitmap.drawText(text, 0, h / 2, w, 1, 'center');
+      this._textSprite.visible = false;
+      return this.addChild(this._textSprite);
+    }
+
+    _updateTextPosition() {
+      var nx, ny;
+      if (!this._textSprite) {
+        return;
+      }
+      nx = this._realWidth() / 2 - this._textSprite.width / 2;
+      if (this._textPosition === 0) {
+        ny = -this._textSprite.height;
+      } else {
+        ny = this._realHeight() + this._textSprite.height / 2;
+      }
+      return this._textSprite.move(nx, ny);
+    }
+
+    applyDisableState() {
+      var ref;
+      this.refreshImages();
+      return (ref = this._images[3]) != null ? ref.visible = true : void 0;
+    }
+
+    refreshEnDisState() {
+      if (this.isDisabled()) {
+        this.applyDisableState();
+        return this._hideText();
+      } else {
+        if (this._mouseIn === false) {
+          return this.applyNormalState();
+        }
+      }
+    }
+
+    //else
+    //    do @applyCoverState
+    updateComplexTextVisible() {}
+
+    applyScale(mod) {
+      var i, img, len, ref;
+      ref = this._images;
+      for (i = 0, len = ref.length; i < len; i++) {
+        img = ref[i];
+        if (img != null) {
+          img.scale.x = mod;
+          img.scale.y = mod;
+        }
+      }
+    }
+
+    static FromSet(imgName, sourceFolder = null) {
+      var button, getterFunc, img0, img1;
+      getterFunc = function(filename) {
+        return ImageManager.loadPicture(filename);
+      };
+      if (sourceFolder != null) {
+        getterFunc = function(filename) {
+          return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
+        };
+      }
+      img0 = getterFunc(imgName + "_00");
+      img1 = getterFunc(imgName + "_01");
+      button = new KDCore.Button();
+      button.setButtonImages(img0, img1, img0, img0);
+      return button;
+    }
+
+    static FromSetFull(imgName, sourceFolder = null) {
+      var button, getterFunc, img0, img1, img2, img3;
+      getterFunc = function(filename) {
+        return ImageManager.loadPicture(filename);
+      };
+      if (sourceFolder != null) {
+        getterFunc = function(filename) {
+          return ImageManager.loadBitmap("img/" + sourceFolder + "/", filename);
+        };
+      }
+      img0 = getterFunc(imgName + "_00");
+      img1 = getterFunc(imgName + "_01");
+      img2 = getterFunc(imgName + "_02");
+      img3 = getterFunc(imgName + "_03");
+      button = new KDCore.Button();
+      button.setButtonImages(img0, img1, img2, img3);
+      return button;
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Sprite_ButtonsGroup;
+  // * Класс для реализации набора кнопок переключателей (Tabs)
+  // * Когда только одна кнопка может быть нажата (выбрана)
+
+    //rev 07.10.21
+  Sprite_ButtonsGroup = class Sprite_ButtonsGroup extends KDCore.Sprite {
+    // buttonsArray = [
+    //       {image: NAME, position: [X,Y]}, ...
+    //    ]
+    constructor(buttonsArray, activeIndex, clickCallback) {
+      var button, i, len;
+      super();
+      this.clickCallback = clickCallback;
+      this._buttons = [];
+      for (i = 0, len = buttonsArray.length; i < len; i++) {
+        button = buttonsArray[i];
+        this._createButton(button);
+      }
+      this._onButtonClick(activeIndex);
+      return;
+    }
+
+    getSelectedIndex() {
+      return this._buttons.findIndex(function(btn) {
+        return !btn.isEnabled();
+      });
+    }
+
+  };
+  (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = Sprite_ButtonsGroup.prototype;
+    _._createButton = function({image, position}) {
+      var btn, index, method;
+      // * Так как кнопки работают как переключатели, то 03 должен быть всегда
+      index = this._buttons.length;
+      btn = new KDCore.ButtonM(image, true, "Alpha");
+      btn.move(position);
+      method = () => {
+        return this._onButtonClick(index);
+      };
+      btn.addClickHandler(method);
+      this._buttons.push(btn);
+      this.add(btn);
+    };
+    _._onButtonClick = function(index = 0) {
+      var ref;
+      this._resetAllButtons();
+      if ((ref = this._buttons[index]) != null) {
+        ref.disable(); // * Нажата
+      }
+      if (this.clickCallback != null) {
+        this.clickCallback();
+      }
+    };
+    _._resetAllButtons = function() {
+      var btn, i, len, ref;
+      ref = this._buttons;
+      for (i = 0, len = ref.length; i < len; i++) {
+        btn = ref[i];
+        if (btn != null) {
+          btn.enable();
+        }
+      }
+    };
+  })();
+  // ■ END PRIVATE
+  //---------------------------------------------------------------------------
+  return KDCore.Sprite_ButtonsGroup = Sprite_ButtonsGroup;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad((function() {
+  var Sprite_TilingFrame;
+  Sprite_TilingFrame = class Sprite_TilingFrame extends KDCore.Sprite {
+    constructor(width, height, skinBitmap) {
+      super();
+      this.width = width;
+      this.height = height;
+      this.skinBitmap = skinBitmap;
+      this._createParts();
+      this._refreshAll();
+    }
+
+    _createParts() {
+      var i, j;
+      this.backSprite = new Sprite();
+      this.addChild(this.backSprite);
+      this.content = new Sprite();
+      this.addChild(this.content);
+      this._outFrame = new Sprite();
+      for (i = j = 0; j < 8; i = ++j) {
+        this._outFrame.addChild(new Sprite());
+      }
+      return this.addChild(this._outFrame);
+    }
+
+    // * Отступ, чтобы за рамку не выходить
+    _fillPadding() {
+      return 2;
+    }
+
+    // * Размер частей на картинке
+    _fillImagePartWidth() {
+      return 96;
+    }
+
+    _fillImagePartHeight() {
+      return 96;
+    }
+
+    // * Толщина рамки
+    _frameThickness() {
+      return 12;
+    }
+
+    _refreshAll() {
+      this._refreshBack();
+      return this._refreshTFrame();
+    }
+
+    _refreshBack() {
+      var fh, fw, h, m, sprite, w;
+      m = this._fillPadding();
+      w = Math.max(0, this.width - m * 2);
+      h = Math.max(0, this.height - m * 2);
+      sprite = this.backSprite;
+      sprite.bitmap = this.skinBitmap;
+      // * Координаты фона из картинки
+      fw = this._fillImagePartWidth();
+      fh = this._fillImagePartHeight();
+      sprite.setFrame(0, 0, fw, fh);
+      sprite.move(m, m);
+      sprite.scale.x = w / fw;
+      return sprite.scale.y = h / fh;
+    }
+
+    _refreshTFrame() {
+      var drect, fh, fw, j, len, m, ref, spr, srect;
+      fw = this._fillImagePartWidth();
+      fh = this._fillImagePartHeight();
+      // * Положение назначения
+      drect = {
+        x: 0,
+        y: 0,
+        width: this.width,
+        height: this.height
+      };
+      // * Координаты рамки на картинке
+      srect = {
+        x: fw,
+        y: 0,
+        width: fw,
+        height: fh
+      };
+      m = this._frameThickness(); // * Толщина
+      ref = this._outFrame.children;
+      for (j = 0, len = ref.length; j < len; j++) {
+        spr = ref[j];
+        spr.bitmap = this.skinBitmap;
+      }
+      if (KDCore.isMZ()) {
+        Window.prototype._setRectPartsGeometry.call(this, this._outFrame, srect, drect, m);
+      } else {
+        this._setRectPartsGeometry(this._outFrame, srect, drect, m);
+      }
+    }
+
+    // * Этот метод существует в MZ, но нет в MV
+    //? From MZ
+    _setRectPartsGeometry(sprite, srect, drect, m) {
+      var child, children, dh, dmh, dmw, dw, dx, dy, j, len, sh, smh, smw, sw, sx, sy;
+      sx = srect.x;
+      sy = srect.y;
+      sw = srect.width;
+      sh = srect.height;
+      dx = drect.x;
+      dy = drect.y;
+      dw = drect.width;
+      dh = drect.height;
+      smw = sw - m * 2;
+      smh = sh - m * 2;
+      dmw = dw - m * 2;
+      dmh = dh - m * 2;
+      children = sprite.children;
+      sprite.setFrame(0, 0, dw, dh);
+      sprite.move(dx, dy);
+      // corner
+      children[0].setFrame(sx, sy, m, m);
+      children[1].setFrame(sx + sw - m, sy, m, m);
+      children[2].setFrame(sx, sy + sw - m, m, m);
+      children[3].setFrame(sx + sw - m, sy + sw - m, m, m);
+      children[0].move(0, 0);
+      children[1].move(dw - m, 0);
+      children[2].move(0, dh - m);
+      children[3].move(dw - m, dh - m);
+      // edge
+      children[4].move(m, 0);
+      children[5].move(m, dh - m);
+      children[6].move(0, m);
+      children[7].move(dw - m, m);
+      children[4].setFrame(sx + m, sy, smw, m);
+      children[5].setFrame(sx + m, sy + sw - m, smw, m);
+      children[6].setFrame(sx, sy + m, m, smh);
+      children[7].setFrame(sx + sw - m, sy + m, m, smh);
+      children[4].scale.x = dmw / smw;
+      children[5].scale.x = dmw / smw;
+      children[6].scale.y = dmh / smh;
+      children[7].scale.y = dmh / smh;
+      // center
+      if (children[8] != null) {
+        children[8].setFrame(sx + m, sy + m, smw, smh);
+        children[8].move(m, m);
+        children[8].scale.x = dmw / smw;
+        children[8].scale.y = dmh / smh;
+      }
+      for (j = 0, len = children.length; j < len; j++) {
+        child = children[j];
+        child.visible = dw > 0 && dh > 0;
+      }
+    }
+
+  };
+  return KDCore.Sprite_TilingFrame = Sprite_TilingFrame;
+}));
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Window_ExtTextLineBase;
+  // * Данное окно используется как основа для Sprite_UITextExt
+  //rev 07.10.21
+  Window_ExtTextLineBase = class Window_ExtTextLineBase extends Window_Base {
+    constructor(rect, fontSettings) {
+      super(rect);
+      this.fontSettings = fontSettings;
+      this.createContents();
+      // * Всегда прозрачное окно
+      this.setBackgroundType(2);
+    }
+
+    // * Нет отступов
+    updatePadding() {
+      return this.padding = 0;
+    }
+
+    // * Нет отступов
+    itemPadding() {
+      return 0;
+    }
+
+    textPadding() {
+      return 0;
+    }
+
+    standardPadding() {
+      return 0;
+    }
+
+    contentsWidth() {
+      return this.width;
+    }
+
+    contentsHeight() {
+      return this.height;
+    }
+
+    // * Более гибкая настройка размера текста при { }
+    makeFontBigger() {
+      return this.contents.fontSize += 1;
+    }
+
+    makeFontSmaller() {
+      if (this.contents.fontSize > 1) {
+        return this.contents.fontSize -= 1;
+      }
+    }
+
+    // * Применение своих шрифта и размера текста
+    resetFontSettings() {
+      super.resetFontSettings();
+      if (this.fontSettings == null) {
+        return;
+      }
+      if (String.any(this.fontSettings.face)) {
+        this.contents.fontFace = this.fontSettings.face;
+      }
+      if (this.fontSettings.size > 0) {
+        this.contents.fontSize = this.fontSettings.size;
+      }
+      if (this.fontSettings.italic != null) {
+        this.contents.fontItalic = this.fontSettings.italic;
+      }
+    }
+
+  };
+  return KDCore.Window_ExtTextLineBase = Window_ExtTextLineBase;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  // * Button M
+  //------------------------------------------------------------------------------
+  //@[AUTO EXTEND]
+  // * Button Mini - упрощённый класс Sprite_XButton (KDCore.Button)
+
+    // * Принимает название файла изображения кнопки без _00
+  // * Названия изображения должны быть в стандартном формате _00, _01, [_03]
+  // * _02 - не используются в этом классе
+
+    // * Класс использует глобальную временную переменную для определения находится ли мышь в зоне кнопки
+
+    // * Если isFull - true, значит нужен _03
+  KDCore.ButtonM = class ButtonM extends KDCore.Sprite {
+    constructor(filename, isFull = false, sourceFolder = null) {
+      super();
+      this._bitmaps = [];
+      this._disabled = false;
+      this._isTriggered = false;
+      // * Когда произошло нажатие на кнопку
+      this._handler = null;
+      this._isCanBeClicked = true;
+      this._isManualHoverMode = false;
+      this._isManualSelected = false;
+      this._loadBitmaps(filename, isFull, sourceFolder);
+      this._setImageState(0);
+      this._createThread();
+    }
+
+    setManualHover() {
+      return this._isManualHoverMode = true;
+    }
+
+    disableManualHover() {
+      return this._isManualHoverMode = false;
+    }
+
+    setManualSelected(_isManualSelected) {
+      this._isManualSelected = _isManualSelected;
+    }
+
+    enableClick() {
+      return this._isCanBeClicked = true;
+    }
+
+    disableClick() {
+      return this._isCanBeClicked = false;
+    }
+
+    desaturate() {
+      this.filters = [new PIXI.filters.ColorMatrixFilter()];
+      this.filters[0].desaturate();
+    }
+
+    isMouseIn() {
+      if (this._isManualHoverMode === true) {
+        return this._isManualSelected;
+      } else {
+        return this.isUnderMouse() && this.visible === true;
+      }
+    }
+
+    isActive() {
+      if (this._isCanBeClicked === false) {
+        return false;
+      }
+      if (this.parent != null) {
+        return this.parent.visible === true && this.visible === true;
+      } else {
+        return this.visible === true;
+      }
+    }
+
+    isDisabled() {
+      return this._disabled === true;
+    }
+
+    addClickHandler(_handler) {
+      this._handler = _handler;
+    }
+
+    clearClickHandler() {
+      return this._handler = null;
+    }
+
+    // * Воспроизводит визуальный эффект нажатия
+    simulateClick() {
+      if (!this.isActive()) {
+        return;
+      }
+      if (this.isDisabled()) {
+        return;
+      }
+      if (this.isMouseIn()) {
+        return;
+      }
+      this._startSimulation();
+    }
+
+    isEnabled() {
+      return !this.isDisabled();
+    }
+
+    refreshState(isEnable = true) {
+      if (isEnable === true) {
+        if (this.isDisabled()) {
+          this.enable();
+        }
+      } else {
+        if (this.isEnabled()) {
+          this.disable();
+        }
+      }
+    }
+
+    disable() {
+      this._disabled = true;
+      return this._setImageState(2);
+    }
+
+    enable() {
+      this._disabled = false;
+      return this._setImageState(0);
+    }
+
+    click() {
+      if (this._handler != null) {
+        return this._handler();
+      }
+    }
+
+    update() {
+      super.update();
+      return this._updateMain();
+    }
+
+  };
+  return (function() {    
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ ButtonM Implementation
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _, alias_SM_isAnyButtonPressed, alias_SM_onMapLoaded;
+    //@[DEFINES]
+    _ = KDCore.ButtonM.prototype;
+    _._loadBitmaps = function(filename, isFull = false, sourceFolder = null) {
+      var getterFunc;
+      getterFunc = this._getGetter(sourceFolder);
+      this._bitmaps.push(getterFunc(filename + '_00'));
+      this._bitmaps.push(getterFunc(filename + '_01'));
+      if (isFull) {
+        this._bitmaps.push(getterFunc(filename + '_03'));
+      }
+    };
+    _._getGetter = function(sourceFolder = null) {
+      var getterFunc;
+      getterFunc = function(filename) {
+        return ImageManager.loadPicture(filename);
+      };
+      if (sourceFolder !== null) {
+        getterFunc = function(filename) {
+          return ImageManager.loadBitmap('img/' + sourceFolder + '/', filename);
+        };
+      }
+      return getterFunc;
+    };
+    _._setImageState = function(index = 0) {
+      if (this._bitmaps[index] == null) {
+        index = 0;
+      }
+      this.bitmap = this._bitmaps[index];
+      this._lastState = index;
+    };
+    _._createThread = function() {
+      this.hoverThread = new KDCore.TimedUpdate(3, this._updateHover.bind(this));
+      this.hoverThread.applyTimeRange(-1, 1);
+      this.hoverThread.call();
+    };
+    //?[DYNAMIC]
+    _._updateMain = function() {
+      this._updateMouseLogic();
+      if (!this.isActive()) {
+        if (($gameTemp.kdButtonUnderMouse != null) && $gameTemp.kdButtonUnderMouse === this) {
+          return $gameTemp.kdButtonUnderMouse = null;
+        }
+      }
+    };
+    _._updateMouseLogic = function() {
+      this.hoverThread.update();
+      return this._updateMouseClick();
+    };
+    _._updateHover = function() {
+      if (!this.isActive()) {
+        return;
+      }
+      // * чтобы эффект нажатия не прекратить
+      if (this._isTriggered === true) {
+        return;
+      }
+      if (this.isMouseIn()) {
+        if (this._lastState !== 1) {
+          if (!this.isDisabled()) {
+            this._setImageState(1);
+          }
+          $gameTemp.kdButtonUnderMouse = this;
+        }
+      } else {
+        if (this._lastState !== 0) {
+          if (!this.isDisabled()) {
+            this._setImageState(0);
+          }
+          if ($gameTemp.kdButtonUnderMouse === this) {
+            $gameTemp.kdButtonUnderMouse = null;
+          }
+        } else if ($gameTemp.kdButtonUnderMouse === this) {
+          $gameTemp.kdButtonUnderMouse = null;
+        }
+      }
+    };
+    _._updateMouseClick = function() {
+      if (!this.isActive()) {
+        return;
+      }
+      if (this.isDisabled()) {
+        return;
+      }
+      if (TouchInput.isTriggered() && this.isMouseIn()) {
+        this._isTriggered = true;
+        this._setImageState(0);
+      }
+      if (this._isTriggered === true) {
+        if (TouchInput.isReleased()) {
+          this._isTriggered = false;
+          if (this.isMouseIn()) {
+            this.click();
+          }
+        }
+      }
+    };
+    _._startSimulation = function() {
+      this._setImageState(1);
+      this._simulateThread = new KDCore.TimedUpdate(10, () => {
+        return this._setImageState(0);
+      });
+      this._simulateThread.once();
+      return this._updateMain = this._updateMouseClickSimulated;
+    };
+    _._updateMouseClickSimulated = function() {
+      this._simulateThread.update();
+      if (!this._simulateThread.isAlive()) {
+        this._simulateThread = null;
+        this._updateMain = this._updateMouseLogic;
+      }
+    };
+    // * Теперь при нажатии на любую кнопку, игрок не будет ходить по карте
+
+    //@[ALIAS]
+    alias_SM_isAnyButtonPressed = Scene_Map.prototype.isAnyButtonPressed;
+    Scene_Map.prototype.isAnyButtonPressed = function() {
+      if ($gameTemp.kdButtonUnderMouse != null) {
+        return true;
+      } else {
+        return alias_SM_isAnyButtonPressed.call(this);
+      }
+    };
+    //TODO: Добавить доп. проверку?
+    //@[ALIAS]
+    alias_SM_onMapLoaded = Scene_Map.prototype.onMapLoaded;
+    Scene_Map.prototype.onMapLoaded = function() {
+      $gameTemp.kdButtonUnderMouse = null;
+      setTimeout((function() {
+        return $gameTemp.kdButtonUnderMouse = null;
+      }), 50);
+      return alias_SM_onMapLoaded.call(this);
+    };
+  })();
+});
+
+// ■ END ButtonM Implementation
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  // * Button Mini User - класс с определением файла каждого состояния отдельно
+  // * Принимает теже аргументы, только заместо имени файла, три изображения (имени)
+  // ? states = { main, hover, disabled }
+  return KDCore.ButtonMU = class ButtonMU extends KDCore.ButtonM {
+    constructor() {
+      super(...arguments);
+    }
+
+    //$[OVER]
+    _loadBitmaps(states, isFull = true, sourceFolder = null) {
+      var getterFunc;
+      getterFunc = this._getGetter(sourceFolder);
+      this._bitmaps.push(getterFunc(states.main));
+      this._bitmaps.push(getterFunc(states.hover));
+      // * Optional 03
+      if (String.any(states.disabled)) {
+        this._bitmaps.push(getterFunc(states.disabled));
+      }
+    }
+
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var Sprite_TilingLine;
+  Sprite_TilingLine = class Sprite_TilingLine extends KDCore.Sprite_TilingFrame {
+    constructor() {
+      super(...arguments);
+    }
+
+    //$[OVER BASE ALL BELOW]
+    _fillPadding() {
+      return 0;
+    }
+
+    _refreshTFrame() {} // * EMPTY
+
+    _fillImagePartWidth() {
+      return 4;
+    }
+
+    _fillImagePartHeight() {
+      return 26;
+    }
+
+  };
+  return KDCore.Sprite_TilingLine = Sprite_TilingLine;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  // * Пространство имён для всех UIElements
+  KDCore.UI = KDCore.UI || {};
+  (function() {    // * Общий класс для всех UI элементов
+    //?rev 13.10.20
+    var Sprite_UIElement;
+    Sprite_UIElement = (function() {
+      // * ABSTRACT значит что класс сам по себе ничего не создаёт, не хранит данные
+      //@[ABSTRACT]
+      class Sprite_UIElement extends KDCore.Sprite {
+        constructor(params) {
+          super();
+          this.params = params;
+          this._init();
+        }
+
+        // * Стандартный набор настроек
+        defaultParams() {
+          return {
+            visible: true
+          };
+        }
+
+        // * Общий метод (есть у всех элементов)
+        // * По умолчанию вызывает drawText, но потомки могут переопределить
+        draw() {
+          return this.drawText(...arguments);
+        }
+
+        // * Общий метод
+        drawText() {} // * EMPTY
+
+        
+          // * Если изначально невидимый (из параметров), то не активный вообще
+        isActive() {
+          return this.params.visible === true;
+        }
+
+        rootImageFolder() {
+          return Sprite_UIElement.RootImageFolder;
+        }
+
+        // * Сделать чёрно белым
+        desaturate() {
+          this.filters = [new PIXI.filters.ColorMatrixFilter()];
+          this.filters[0].desaturate();
+        }
+
+        // * Общий метод (можно ли редактировать визуально)
+        isCanBeEdited() {
+          return false;
+        }
+
+        // * Общий метод (надо ли скрывать при игровом сообщнии)
+        isHaveHideWithMessageFlag() {
+          return false;
+        }
+
+        // * Общий метод (находится ли объект под мышкой)
+        isUnderMouse() {
+          var ref;
+          return (ref = this.zeroChild()) != null ? ref.isUnderMouse() : void 0;
+        }
+
+        // * Параметры первого элемента (если он есть)
+        realWidth() {
+          var child;
+          child = this.zeroChild();
+          if (child != null) {
+            if (child instanceof KDCore.UI.Sprite_UIElement) {
+              return child.realWidth();
+            } else {
+              return child.width;
+            }
+          }
+          return 0;
+        }
+
+        realHeight() {
+          var child;
+          child = this.zeroChild();
+          if (child != null) {
+            if (child instanceof KDCore.UI.Sprite_UIElement) {
+              return child.realHeight();
+            } else {
+              return child.height;
+            }
+          }
+          return 0;
+        }
+
+        // * Первый "физический" элемент (спрайт)
+        zeroChild() {
+          return this.children[0];
+        }
+
+        // * Метод восстановления значения на стандартные настройки
+        reset(property) {
+          var e;
+          try {
+            switch (property) {
+              case "position":
+                this._resetPosition();
+                break;
+              default:
+                this[property] = this.params[property];
+            }
+          } catch (error) {
+            e = error;
+            KDCore.warning(e);
+          }
+        }
+
+      };
+
+      // * Корневая директория для изображений
+      Sprite_UIElement.RootImageFolder = "Alpha";
+
+      return Sprite_UIElement;
+
+    }).call(this);
+    KDCore.UI.Sprite_UIElement = Sprite_UIElement;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIElement.prototype;
+    _._init = function() {
+      var e;
+      this._prepare();
+      try {
+        return this._createContent();
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        // * Если при создании произошла ошибка, отключаем элемент
+        return this.isActive = function() {
+          return false;
+        };
+      }
+    };
+    
+    // * Подготовка элемента (проверка параметров)
+    _._prepare = function() {
+      if (this.params == null) {
+        this.params = this.defaultParams();
+      }
+      return this.visible = this.params.visible;
+    };
+    // * Наследники создают свои элементы в этом методе
+    _._createContent = function() {}; // * EMPTY
+    
+    // * Сброс позиции
+    _._resetPosition = function() {
+      var e, x, y;
+      if (this.params.position == null) {
+        return;
+      }
+      try {
+        ({x, y} = this.params.position);
+        this.move(x, y);
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+      }
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIButton;
+    // * Кнопка на экране, можно нажимать
+    Sprite_UIButton = class Sprite_UIButton extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          image: "Button_Inventory",
+          isHaveDisabled: true,
+          click: "console.log('click')" // * число или код
+        };
+      }
+
+      // * Кнопка не поддерживает перерисовку
+      draw() {} // * EMPTY
+
+      disable() {
+        var ref;
+        return (ref = this.button) != null ? ref.disable() : void 0;
+      }
+
+      enable() {
+        var ref;
+        return (ref = this.button) != null ? ref.enable() : void 0;
+      }
+
+      setState(isEnabled) {
+        if (isEnabled) {
+          return this.enable();
+        } else {
+          return this.disable();
+        }
+      }
+
+      
+        // * Просто вызов метода
+      call() {
+        var ref;
+        return (ref = this.button) != null ? ref.click() : void 0;
+      }
+
+      // * Вызов метода с симуляцией нажатия
+      click() {
+        var ref, ref1;
+        if ((ref = this.button) != null) {
+          ref.click();
+        }
+        return (ref1 = this.button) != null ? ref1.simulateClick() : void 0;
+      }
+
+    };
+    KDCore.UI.Sprite_UIButton = Sprite_UIButton;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIButton.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      if (this.params.image.isEmpty()) {
+        KDCore.warning('You try create Button without image');
+        return;
+      }
+      this.button = new KDCore.ButtonM(this.params.image, this.params.isHaveDisabled, this.rootImageFolder());
+      this.add(this.button);
+      return this._registerClickMethod();
+    };
+    _._registerClickMethod = function() {
+      var commonEventId, e, method, ref, script;
+      if (!String.any(this.params.click)) {
+        return;
+      }
+      method = null;
+      try {
+        // * Если число, то значит общее событие
+        if (isFinite(this.params.click)) {
+          commonEventId = parseInt(this.params.click);
+          if (commonEventId > 0) {
+            method = function() {
+              return $gameTemp.reserveCommonEvent(commonEventId);
+            };
+          }
+        } else {
+          // * Иначе скрипт
+          script = this.params.click;
+          method = function() {
+            return eval(script);
+          };
+        }
+        return this.button.addClickHandler(method);
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return (ref = this.button) != null ? ref.clearClickHandler() : void 0;
+      }
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {    // * Рисует лицо персонажа (из папки Faces)
+    var Sprite_UIFace;
+    Sprite_UIFace = class Sprite_UIFace extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          faceName: "Actor1",
+          faceIndex: 0,
+          mirror: false,
+          size: 144
+        };
+      }
+
+      draw() {
+        return this.drawFace(...arguments);
+      }
+
+      drawFace(faceName, faceIndex) {
+        return this._drawFaceWhenReady(faceName, faceIndex);
+      }
+
+    };
+    KDCore.UI.Sprite_UIFace = Sprite_UIFace;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIFace.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      return this._createFaceSprite();
+    };
+    _._createFaceSprite = function() {
+      this._faceSpr = KDCore.Sprite.FromBitmap(this.params.size);
+      if (this.params.mirror === true) {
+        this._flipFaceSpr();
+      }
+      this.add(this._faceSpr);
+      this._drawFaceWhenReady(this.params.faceName, this.params.faceIndex);
+    };
+    _._flipFaceSpr = function() {
+      this._faceSpr.scale.x = -1;
+      this._faceSpr.x = this.params.size;
+    };
+    _._drawFaceWhenReady = function(name, index = 0) {
+      var ref;
+      if ((ref = this._faceSpr) != null) {
+        ref.clear();
+      }
+      if (!String.any(name)) {
+        return;
+      }
+      if (index < 0) {
+        return;
+      }
+      this._drawOnReady = {name, index};
+      this._faceSourceBitmap = ImageManager.loadFace(name);
+      this._faceSourceBitmap.addLoadListener(this._drawFace.bind(this));
+      this._drawFace();
+    };
+    _._drawFace = function() {
+      var fh, fw, size, sx, sy;
+      if (this._faceSpr == null) {
+        return;
+      }
+      this._faceSpr.clear();
+      if (!String.any(this._drawOnReady.name)) {
+        return;
+      }
+      fw = ImageManager.faceWidth;
+      fh = ImageManager.faceHeight;
+      size = this.params.size;
+      sx = (this._drawOnReady.index % 4) * fw;
+      sy = Math.floor(this._drawOnReady.index / 4) * fh;
+      this._faceSpr.bitmap.blt(this._faceSourceBitmap, sx, sy, fw, fh, 0, 0, size, size);
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIGauge;
+    Sprite_UIGauge = class Sprite_UIGauge extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          fill: "",
+          foreground: "",
+          mask: "",
+          backColor: "#000000".toCss(),
+          backOpacity: 255,
+          vertical: false
+        };
+      }
+
+      draw() {
+        return this.drawGauge(...arguments);
+      }
+
+      drawGauge(percent = 1) {
+        this._lastValue = percent;
+        return this._drawGauge(percent);
+      }
+
+      isVertical() {
+        return this.params.vertical === true;
+      }
+
+    };
+    KDCore.UI.Sprite_UIGauge = Sprite_UIGauge;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIGauge.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      // * Загружается главное изображение, затем уже все остальные, т.к. нужны размеры
+      return this._loadFillImage();
+    };
+    _._loadFillImage = function() {
+      // * Главное изображение, поэтому если не указано, то ничего
+      if (this.params.fill.isEmpty()) {
+        KDCore.warning('You try create Gauge without fill image');
+        return;
+      }
+      KDCore.Utils.loadImageAsync(this.rootImageFolder(), this.params.fill).then(this._createParts.bind(this));
+    };
+    // * Получаем изображение заполнения и создаём части (т.к. есть размеры)
+    _._createParts = function(fillBitmap) {
+      this.fillBitmap = fillBitmap;
+      this._createBackground();
+      this._createFillLayer();
+      this._loadForeground();
+      this._loadMask();
+      return this._onReady();
+    };
+    _._createBackground = function() {
+      this.background = KDCore.Sprite.FromBitmap(this.fillBitmap.width, this.fillBitmap.height);
+      this.background.b().fillAll(this.params.backColor);
+      this.background.opacity = this.params.backOpacity;
+      return this.add(this.background);
+    };
+    _._createFillLayer = function() {
+      this.fillLayer = KDCore.Sprite.FromBitmap(this.fillBitmap.width, this.fillBitmap.height);
+      return this.add(this.fillLayer);
+    };
+    _._loadForeground = function() {
+      var fore;
+      if (String.isNullOrEmpty(this.params.foreground)) {
+        return;
+      }
+      fore = KDCore.Sprite.FromImg(this.params.foreground, this.rootImageFolder());
+      return this.add(fore);
+    };
+    _._loadMask = function() {
+      var mask;
+      if (String.isNullOrEmpty(this.params.mask)) {
+        return;
+      }
+      mask = KDCore.Sprite.FromImg(this.params.mask, this.rootImageFolder());
+      this.mask = mask;
+      return this.add(mask);
+    };
+    // * Если что-то было до готовности, нарисовать
+    _._onReady = function() {
+      this.drawGauge(this._lastValue);
+    };
+    _._drawGauge = function(percent) {
+      if (this.fillLayer == null) {
+        return;
+      }
+      this.fillLayer.clear();
+      if (this.isVertical()) {
+        return this._drawVerGauge(percent);
+      } else {
+        return this._drawHorGauge(percent);
+      }
+    };
+    _._drawHorGauge = function(percent) {
+      var w;
+      w = this.fillBitmap.width * percent;
+      return this.fillLayer.b().blt(this.fillBitmap, 0, 0, w, this.fillLayer.height, 0, 0);
+    };
+    _._drawVerGauge = function(percent) {
+      var h, hy;
+      h = this.fillBitmap.height * percent;
+      hy = this.fillBitmap.height - h;
+      this.fillLayer.b().blt(this.fillBitmap, 0, 0, this.fillLayer.width, h, 0, hy);
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIIcon;
+    Sprite_UIIcon = class Sprite_UIIcon extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          index: 0,
+          size: 32
+        };
+      }
+
+      draw() {
+        return this.drawIcon(...arguments);
+      }
+
+      drawIcon(index = 0) {
+        this._lastValue = index;
+        return this._drawIcon(index);
+      }
+
+    };
+    KDCore.UI.Sprite_UIIcon = Sprite_UIIcon;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIIcon.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      this._createIcon();
+      return this._drawIcon(this.params.index);
+    };
+    _._createIcon = function() {
+      this._icon = KDCore.Sprite.FromBitmap(this.params.size, this.params.size);
+      this.add(this._icon);
+      return this._onReady();
+    };
+    _._onReady = function() {
+      return this.drawIcon(this._lastValue);
+    };
+    _._drawIcon = function(index) {
+      this._icon.clear();
+      if (KDCore.SDK.isString(index)) {
+        this._drawImageIcon(index);
+      } else {
+        if (index <= 0) {
+          return;
+        }
+        this._icon.drawIcon(0, 0, index, this.params.size);
+      }
+    };
+    _._drawImageIcon = function(imageName) {
+      return KDCore.Utils.loadImageAsync(this.rootImageFolder(), imageName).then((bitmap) => {
+        return this._icon.drawIcon(0, 0, bitmap, this.params.size);
+      });
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIImage;
+    Sprite_UIImage = class Sprite_UIImage extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          image: ""
+        };
+      }
+
+      draw() {
+        return this.drawImage(...arguments);
+      }
+
+      drawImage(image) {
+        return this._drawImage(image);
+      }
+
+    };
+    KDCore.UI.Sprite_UIImage = Sprite_UIImage;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIImage.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      return this._drawImage(this.params.image);
+    };
+    _._drawImage = function(image) {
+      this._clearImage();
+      if (!String.isNullOrEmpty(image)) {
+        this._image = KDCore.Sprite.FromImg(image, this.rootImageFolder());
+        this.add(this._image);
+      }
+    };
+    _._clearImage = function() {
+      if (this._image == null) {
+        return;
+      }
+      this._image.visible = false;
+      this.removeChild(this._image);
+      return this._image = null;
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIRect;
+    Sprite_UIRect = class Sprite_UIRect extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          size: {
+            w: 60,
+            h: 20
+          },
+          fillColor: "#FFFFFF".toCss(),
+          fillOpacity: 255,
+          borderColor: "#000000".toCss(),
+          borderThickness: 1,
+          borderOpacity: 255
+        };
+      }
+
+      draw() {
+        return this.fill(...arguments);
+      }
+
+      fill(color, opacity = 255) {
+        return this._fill(color, opacity);
+      }
+
+      drawBorder(color, thickness = 1, opacity = 255) {
+        return this._drawBorder(color, thickness, opacity);
+      }
+
+    };
+    KDCore.UI.Sprite_UIRect = Sprite_UIRect;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIRect.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      if (String.any(this.params.fillColor)) {
+        this._createFill();
+        this.fill(this.params.fillColor, this.params.fillOpacity);
+      }
+      if (String.any(this.params.borderColor) && this.params.borderThickness > 0) {
+        this._createBorder();
+        return this.drawBorder(this.params.borderColor, this.params.borderThickness, this.params.borderOpacity);
+      }
+    };
+    _._createFill = function() {
+      this._fillSpr = KDCore.Sprite.FromBitmap(this.params.size.w, this.params.size.h);
+      return this.addChild(this._fillSpr);
+    };
+    _._createBorder = function() {
+      this._borderSprite = KDCore.Sprite.FromBitmap(this.params.size.w, this.params.size.h);
+      return this.addChild(this._borderSprite);
+    };
+    _._fill = function(color, opacity) {
+      if (this._fillSpr == null) {
+        return;
+      }
+      this._fillSpr.fillAll(color);
+      this._fillSpr.opacity = opacity;
+    };
+    _._drawBorder = function(color, thickness, opacity) {
+      var b;
+      if (this._borderSprite == null) {
+        return;
+      }
+      this._borderSprite.clear();
+      b = this._borderSprite.b();
+      // * Top line
+      b.fillRect(0, 0, b.width, thickness, color);
+      // * Bottom line
+      b.fillRect(0, b.height - thickness, b.width, thickness, color);
+      // * Left line
+      b.fillRect(0, 0, thickness, b.height, color);
+      // * Right line
+      b.fillRect(b.width - thickness, 0, thickness, b.height, color);
+      return this._borderSprite.opacity = opacity;
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {    //rev 30.12.21
+    var Sprite_UIText;
+    Sprite_UIText = class Sprite_UIText extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          size: {
+            w: 60,
+            h: 20
+          },
+          alignment: "center",
+          font: {
+            face: null,
+            size: 18,
+            italic: false
+          },
+          margins: {
+            x: 0,
+            y: 0
+          },
+          outline: {
+            color: null,
+            width: 2
+          },
+          textColor: "#FFFFFF".toCss()
+        };
+      }
+
+      //?DYNAMIC
+      // * Сперва рисуем по готовности, а как загрузился спрайт, меняем
+      drawText(text) {
+        return this._drawTextWhenReady(text);
+      }
+
+      // * Сборка текста с учётом формата
+      drawTextWithFormat(/*format string, arguments parameters... */) {
+        var text;
+        text = this._convertFormatedString(...arguments);
+        this.drawText(text);
+      }
+
+      // * Пишет текст с определённым цветом (один раз)
+      drawTextColor(text, colorCss) {
+        if (this._textSpr == null) {
+          return;
+        }
+        this._textSpr.b().textColor = colorCss;
+        this.drawText(text);
+        this._textSpr.b().textColor = this.params.textColor;
+      }
+
+    };
+    KDCore.UI.Sprite_UIText = Sprite_UIText;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIText.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      return this._createTextSprite();
+    };
+    _._createTextSprite = function() {
+      this._textSpr = KDCore.Sprite.FromParams(this.params);
+      this._textSpr.onReady(this._onReady.bind(this));
+      return this.add(this._textSpr);
+    };
+    // * Выполнить по готовности
+    _._onReady = function() {
+      // * Переключить метод, так как уже готов
+      this.drawText = this._drawText;
+      // * Написать то что нужно было до готовности (если есть)
+      if (this._drawOnReady == null) {
+        return;
+      }
+      this.drawText(this._drawOnReady);
+      this._drawOnReady = null;
+    };
+    _._drawText = function(text) {
+      if (this._textSpr == null) {
+        return;
+      }
+      this._textSpr.clear();
+      if (text != null) {
+        this._textSpr.drawTextFull(text);
+      }
+    };
+    // * Написать текст когда будет готов
+    _._drawTextWhenReady = function(text) {
+      this._drawOnReady = text;
+      return this._drawText(text);
+    };
+    
+    // * Заменить вхождения %1, %2 на значения параметров
+    _._convertFormatedString = function(/*text, args...*/) {
+      var e, i, j, ref, text;
+      try {
+        text = arguments[0];
+        for (i = j = 1, ref = arguments.length; (1 <= ref ? j < ref : j > ref); i = 1 <= ref ? ++j : --j) {
+          try {
+            if (arguments[i] == null) {
+              continue;
+            }
+            text = text.replace("%" + i, arguments[i]);
+          } catch (error) {
+            e = error;
+            KDCore.warning(e);
+            text = "[wrong format text input]";
+          }
+        }
+        return text;
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return "[wrong format text input]";
+      }
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {    //rev 30.12.21
+    var Sprite_UITextExt;
+    Sprite_UITextExt = class Sprite_UITextExt extends KDCore.UI.Sprite_UIText {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          size: {
+            w: 200,
+            h: 60
+          },
+          font: {
+            face: null,
+            size: 14,
+            italic: false
+          },
+          margins: {
+            x: 0,
+            y: 0
+          },
+          // * новые параметры (KDCore 2.7)
+          //?null могут быть
+          singleLine: false,
+          forceCentered: false
+        };
+      }
+
+      //$[OVER]
+      // * Данный метод не поддерживается, так как тут основа не Sprite, а Window
+      drawTextColor() {
+        return this.drawText(...arguments);
+      }
+
+    };
+    KDCore.UI.Sprite_UITextExt = Sprite_UITextExt;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UITextExt.prototype;
+    //$[OVER]
+    _._createTextSprite = function() {
+      var rect;
+      rect = new Rectangle(0, 0, this.params.size.w, this.params.size.h);
+      this._textSpr = new KDCore.Window_ExtTextLineBase(rect, this.params.font);
+      this._textSpr.x = this.params.margins.x || 0;
+      this._textSpr.y = this.params.margins.y || 0;
+      this.add(this._textSpr);
+      // * На следующий кадр, чтобы не было потери текста (опасно)
+      //setTimeout (=> @_onReady() ), 10
+      this._onReady(); // * Сразу
+    };
+    
+    //$[OVER]
+    _._drawText = function(text) {
+      if (this._textSpr == null) {
+        return;
+      }
+      this._textSpr.contents.clear();
+      if (this.params.forceCentered === true) {
+        this._textSpr.drawTextExInCenter(text, 0, 0, this._textSpr.width, this._textSpr.height);
+      } else {
+        if (this.params.singleLine === true) {
+          this._textSpr.drawTextEx(text, 0, 0, this._textSpr.width);
+        } else {
+          // * По умолчанию
+          this._textSpr.drawTextExWithWordWrap(text, 0, 0, this._textSpr.width);
+        }
+      }
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UITextWithBack;
+    Sprite_UITextWithBack = class Sprite_UITextWithBack extends KDCore.UI.Sprite_UIElement {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          text: {
+            visible: true,
+            size: {
+              w: 60,
+              h: 20
+            },
+            alignment: "center",
+            font: {
+              face: null,
+              size: 18,
+              italic: false
+            },
+            margins: {
+              x: 0,
+              y: 0
+            },
+            outline: {
+              color: null,
+              width: 2
+            },
+            textColor: "#000000".toCss()
+          },
+          rect: {
+            visible: true,
+            size: {
+              w: 60,
+              h: 20
+            },
+            fillColor: "#FFFFFF".toCss(),
+            fillOpacity: 255,
+            borderColor: "#000000".toCss(),
+            borderThickness: 1,
+            borderOpacity: 255
+          },
+          textMargins: {
+            x: 0,
+            y: 0
           }
         };
-      })();
-      (function() {        // ■ END Window_Base.coffee
-        //---------------------------------------------------------------------------
+      }
 
-        //╒═════════════════════════════════════════════════════════════════════════╛
-        // ■ Spriteset_Map.coffee
-        //╒═════════════════════════════════════════════════════════════════════════╛
-        //---------------------------------------------------------------------------
-        var _;
-        
-        //@[DEFINES]
-        _ = Spriteset_Map.prototype;
-        _.findTargetSprite = function(target) {
-          return this._characterSprites.find(function(sprite) {
-            return sprite.checkCharacter(target);
-          });
-        };
-      })();
-      (function() {        // ■ END Spriteset_Map.coffee
-        //---------------------------------------------------------------------------
+      draw() {
+        return this.drawText(...arguments);
+      }
 
-        //╒═════════════════════════════════════════════════════════════════════════╛
-        // ■ Sprite_Character.coffee
-        //╒═════════════════════════════════════════════════════════════════════════╛
-        //---------------------------------------------------------------------------
-        var _;
-        
-        //@[DEFINES]
-        _ = Sprite_Character.prototype;
-        _.checkCharacter = function(character) {
-          return this._character === character;
+      // * Aргументы смотри в Sprite_UIText
+      drawText() {
+        return this.text.draw(...arguments);
+      }
+
+      drawTextColor() {
+        return this.text.drawTextColor(...arguments);
+      }
+
+      // * Аргументы смотри в Sprite_UIRect
+      fill() {
+        return this.rect.fill(...arguments);
+      }
+
+      drawBorder() {
+        return this.rect.drawBorder(...arguments);
+      }
+
+      //$[OVER]
+      isUnderMouse() {
+        return this.rect.isUnderMouse();
+      }
+
+    };
+    KDCore.UI.Sprite_UITextWithBack = Sprite_UITextWithBack;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UITextWithBack.prototype;
+    //$[OVER]
+    _._createContent = function() {
+      this._createRect();
+      return this._createText();
+    };
+    _._createRect = function() {
+      this.rect = new KDCore.UI.Sprite_UIRect(this.params.rect);
+      return this.addChild(this.rect);
+    };
+    _._createText = function() {
+      var x, y;
+      this.text = new KDCore.UI.Sprite_UIText(this.params.text);
+      ({x, y} = this.params.textMargins);
+      this.text.move(x, y);
+      return this.addChild(this.text);
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  (function() {
+    var Sprite_UIColorGauge;
+    Sprite_UIColorGauge = class Sprite_UIColorGauge extends KDCore.UI.Sprite_UIGauge {
+      constructor() {
+        super(...arguments);
+      }
+
+      // * Стандартный набор настроек
+      defaultParams() {
+        return {
+          visible: true,
+          size: {
+            w: 100,
+            h: 40
+          },
+          fill: "#FFFFFF", // * В отличии от Gauge, тут цвет, а не картинка
+          foreground: "", // картинка
+          mask: "", // картинка
+          backColor: "#000000".toCss(),
+          backOpacity: 255,
+          vertical: false
         };
-      })();
+      }
+
+    };
+    KDCore.UI.Sprite_UIColorGauge = Sprite_UIColorGauge;
+  })();
+  return (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = KDCore.UI.Sprite_UIColorGauge.prototype;
+    //$[OVER]
+    // * Заместо изображения используем простой Bitmap с заливкой цвета
+    _._loadFillImage = function() {
+      var fillBitmap;
+      fillBitmap = new Bitmap(this.params.size.w, this.params.size.h);
+      fillBitmap.fillAll(this.params.fill);
+      this._createParts(fillBitmap);
+    };
+  })();
+});
+
+// ■ END PRIVATE.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var ALIAS__processEscapeCharacter, _;
+  //@[DEFINES]
+  _ = Window_Base.prototype;
+  //@[ALIAS]
+  ALIAS__processEscapeCharacter = _.processEscapeCharacter;
+  _.processEscapeCharacter = function(code, textState) {
+    switch (code) {
+      case 'CHEX':
+        this.pProcessColorChangeHex(this.pObtainEscapeParamHexColor(textState));
+        break;
+      case 'ISZ':
+        this.pProcessDrawIconSized(this.pObtainEscapeParamIconArr(textState), textState);
+        break;
+      case 'PSZ':
+        this.pProcessDrawPictureSized(this.pObtainEscapeParamImgArr(textState), textState, false);
+        break;
+      case 'PSB':
+        this.pProcessDrawPictureSized(this.pObtainEscapeParamImgArr(textState), textState, true);
+        break;
+      default:
+        ALIAS__processEscapeCharacter.call(this, code, textState);
+    }
+  };
+  //?NEW
+  _.pObtainEscapeParamHexColor = function(textState) {
+    var arr, regExp, textPart;
+    regExp = /^\[(#?([0-9a-fA-F]{2}){3}|([0-9a-fA-F]){3})\]/;
+    textPart = textState.text.slice(textState.index);
+    arr = regExp.exec(textPart);
+    if (arr != null) {
+      textState.index += arr[0].length;
+      return arr[1];
+    } else {
+      return "";
+    }
+  };
+  //?NEW
+  _.pObtainEscapeParamIconArr = function(textState) {
+    var arr, params, regExp, textPart;
+    regExp = /^\[(\d+,\s*\d+,\s*-?\d+,\s*-?\d+)\]/;
+    textPart = textState.text.slice(textState.index);
+    arr = regExp.exec(textPart);
+    if (arr != null) {
+      textState.index += arr[0].length;
+      if (arr[1] != null) {
+        params = arr[1].split(",").map(function(i) {
+          return parseInt(i.trim());
+        });
+        return params;
+      }
+    }
+    return [];
+  };
+  //?NEW
+  _.pObtainEscapeParamImgArr = function(textState) {
+    var arr, params, regExp, textPart;
+    regExp = /^\[(\w+,\s*\d+,\s*\d+,\s*-?\d+,\s*-?\d+)\]/;
+    textPart = textState.text.slice(textState.index);
+    arr = regExp.exec(textPart);
+    if (arr != null) {
+      textState.index += arr[0].length;
+      if (arr[1] != null) {
+        params = arr[1].split(",").map(function(i) {
+          if (isFinite(i)) {
+            return parseInt(i.trim());
+          } else {
+            return i;
+          }
+        });
+        return params;
+      }
+    }
+    return [];
+  };
+  //?NEW
+  _.pProcessColorChangeHex = function(colorHex) {
+    var e;
+    try {
+      this.changeTextColor(colorHex);
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      this.resetTextColor();
+    }
+  };
+  //?NEW
+  //?params: [INDEX, SIZE, DX, DY]
+  _.pProcessDrawIconSized = function(params, textState) {
+    var dx, dy, e, iconIndex, size, staticMargin, x, y;
+    try {
+      if (params == null) {
+        return;
+      }
+      if (params.isEmpty()) {
+        return;
+      }
+      size = params[1];
+      if (params[1] == null) {
+        size = ImageManager.iconWidth;
+      }
+      if (params[2] == null) {
+        params[2] = 0;
+      }
+      if (params[3] == null) {
+        params[3] = 0;
+      }
+      iconIndex = params[0];
+      dx = params[2];
+      dy = params[3];
+      staticMargin = 2;
+      x = textState.x + staticMargin + dx;
+      y = textState.y + staticMargin + dy;
+      // * Только в режиме рисования
+      if (textState.drawing === true) {
+        this.contents.drawIcon(x, y, iconIndex, size);
+      }
+      textState.x += size + (staticMargin * 2) + dx;
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+    }
+  };
+  //?NEW
+  //?params: [NAME, W, H, DX, DY]
+  _.pProcessDrawPictureSized = function(params, textState, isUnderText = false) {
+    var drawBitmap, drawProcess, e, height, name, source, width, x, y;
+    try {
+      if (params == null) {
+        return;
+      }
+      if (params.isEmpty()) {
+        return;
+      }
+      name = params[0];
+      if (!String.any(name)) {
+        return;
+      }
+      width = params[1];
+      height = params[2];
+      if (params[3] == null) {
+        params[3] = 0;
+      }
+      if (params[4] == null) {
+        params[4] = 0;
+      }
+      x = textState.x + 2 + params[3];
+      y = textState.y + 2 + params[4];
+      drawBitmap = this.contents;
+      source = this.pGetSourceImageForDrawPictureSized(name);
+      if (textState.drawing === true) {
+        drawProcess = function() {
+          var e;
+          try {
+            if (drawBitmap == null) {
+              return;
+            }
+            return drawBitmap.drawOnMe(source, x, y, width, height);
+          } catch (error) {
+            e = error;
+            return KDCore.warning(e);
+          }
+        };
+        source.addLoadListener(drawProcess);
+      }
+      if (isUnderText !== true) {
+        // * Вариант, что текст не будет "перескакивать" за ширину картинки а пойдёт поверх (т.е. фоновая картинка)
+        // * Если картине не preload, то может "вылезти" на текст потом, так как рисоваться будет позже
+        textState.x += width + 4 + params[3];
+      }
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+    }
+  };
+  // * Данный метод вынесен отдельно, чтобы можно было переопределять папки
+  return _.pGetSourceImageForDrawPictureSized = function(name) {
+    return ImageManager.loadPicture(name);
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var FloatingWindow;
+  
+    // * Общий класс для всех окон на карте
+  /*parameters
+      {
+          draggable: true,
+          closeButton: true,
+          moveToCenter: true,
+          alwaysOnTop: true,
+          header: true
+      }
+  */
+  FloatingWindow = class FloatingWindow extends KDCore.Sprite {
+    constructor(mainParent, windowW, windowH, parameters) {
+      super();
+      this.mainParent = mainParent;
+      this.windowW = windowW;
+      this.windowH = windowH;
+      this.parameters = parameters;
+      this._init();
+      return;
+    }
+
+    static StaticSettings() {
+      return {
+        draggable: false,
+        closeButton: false,
+        moveToCenter: false,
+        alwaysOnTop: false,
+        header: false
+      };
+    }
+
+    // * Статическое окно с дочерним
+    static StaticWindow(parent, sub) {
+      var p, w;
+      p = KDCore.FloatingWindow.StaticSettings();
+      w = new KDCore.FloatingWindow(parent, sub.width, sub.height, p);
+      w.setSubWindow(sub);
+      w.open();
+      return w;
+    }
+
+    isActive() {
+      return this.visible === true;
+    }
+
+    isReady() {
+      return this._isReady === true;
+    }
+
+    isMouseIn() {
+      return this.inPosition(TouchInput);
+    }
+
+    isOpen() {
+      return this.isActive();
+    }
+
+    // * Дочернее окно (если есть)
+    sub() {
+      return this._subw;
+    }
+
+    setOnReadyHandler(_readyHandler) {
+      this._readyHandler = _readyHandler;
+      if ((this._readyHandler != null) && this._isReady === true) {
+        return this._readyHandler();
+      }
+    }
+
+    isDraggable() {
+      return this._isDraggable === true && (this._headerSpr != null) && this._headerSpr.visible === true && this.isOpen();
+    }
+
+    setCloseHandler(_closeHandler) {
+      this._closeHandler = _closeHandler;
+    }
+
+    callCloseHandler() {
+      if (this._closeHandler != null) {
+        return this._closeHandler();
+      }
+    }
+
+    setDraggingHandler(_dragHandler) {
+      this._dragHandler = _dragHandler;
+    }
+
+    setDragEndHandler(_dragEndHandler) {
+      this._dragEndHandler = _dragEndHandler;
+    }
+
+    hideHeader() {} //TODO:
+
+    hideCloseButton() {} //TODO:
+
+    
+      // * Сдвиг заголовка по X, чтобы рамку не задевал
+    headerMarginX() {
+      return 2;
+    }
+
+    // * Сдвиг заголовка по Y, чтобы рамку не задевал
+    headerMarginY() {
+      return 0;
+    }
+
+    // * Стандартная позиция кнопки "закрыть"
+    closeButtonPosition() {
+      return {
+        x: this.width - 24,
+        y: 4
+      };
+    }
+
+    open() {
+      if (this.isOpen()) {
+        return;
+      }
+      this._open();
+      this._afterOpen();
+    }
+
+    close() {
+      if (!this.isOpen()) {
+        return;
+      }
+      this._close();
+      this._afterClose();
+    }
+
+    rootImageFolder() {
+      return "Alpha/Windows";
+    }
+
+    update() {
+      super.update();
+      this._updateMouseCheckThread();
+      this._updateDragging();
+    }
+
+    // * Добавить спрайт на специальный слой контента
+    addContent(sprite) {
+      return this._contentLayer.addChild(sprite);
+    }
+
+    // * Добавить дочернее окно
+    setSubWindow(w) {
+      this._subw = w;
+      this.addContent(w);
+    }
+
+    destroy() {
+      this._close();
+      return Sprite.prototype.destroy.call(this);
+    }
+
+  };
+  (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PRIVATE.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    //@[DEFINES]
+    _ = FloatingWindow.prototype;
+    _._init = function() {
+      var ref;
+      // * Окно всегда закрыто
+      this.visible = false;
+      // * Контент прогрузился?
+      this._isReady = false;
+      this._applyParameters();
+      if (this._isAlwaysOnTop === false) {
+        // * Если не всегда поверх окон, то добавляем сразу к родителю (один раз)
+        if ((ref = this.mainParent) != null) {
+          ref.addChild(this);
+        }
+      }
+      this._initFloatingSystem();
+      this._createLayers();
+      this._loadWindowFrame();
+    };
+    // * Тут ничего не создавать, не двигать, так как
+    // * конент создаётся Async, см. метод _createCustomElements
+    _._applyParameters = function() {
+      var p;
+      this._applyDefaults();
+      if (this.parameters == null) {
+        return;
+      }
+      p = this.parameters;
+      if (p.draggable != null) {
+        this._isDraggable = p.draggable;
+      }
+      if (p.moveToCenter != null) {
+        this._isMoveToCenter = p.moveToCenter;
+      }
+      if (p.header != null) {
+        this._isHeaderVisible = p.header;
+      }
+      if (p.closeButton != null) {
+        this._isHaveCloseButton = p.closeButton;
+      }
+      if (p.alwaysOnTop != null) {
+        this._isAlwaysOnTop = p.alwaysOnTop;
+      }
+    };
+    _._applyDefaults = function() {
+      // * Окно можно перетаскивать мышкой (по умолчанию - да)
+      this._isDraggable = true;
+      this._isMoveToCenter = true;
+      this._isHeaderVisible = true;
+      this._isHaveCloseButton = true;
+      this._isAlwaysOnTop = true;
+    };
+    _._initFloatingSystem = function() {
+      if ($gameTemp._floatingWindows == null) {
+        // * Создаём массив окон, он нужен для правильного
+        // закрытия окон (по очереди) и перемещения drag and drop
+        // с учётом верхнего окна
+        $gameTemp._floatingWindows = [];
+      }
+      // * Вспомогательная переменная, чтобы не вызывать методы каждый кадр
+      this._mouseIn = false;
+      // * Тоже вспомогательная переменная
+      this._dragging = false;
+    };
+    _._moveToStartPosition = function() {
+      if (this._isMoveToCenter === true) {
+        return this.moveToCenter(Graphics.width / 2, Graphics.height / 2);
+      }
+    };
+    _._closeButtonClick = function() {
+      // * При исчезании, кнопка не успевает себя "удалить"
+      $gameTemp.kdButtonUnderMouse = null;
+      this.callCloseHandler();
+      return this.close();
+    };
+    (function() {      // * DRAGGING
+      // -----------------------------------------------------------------------
+      _._updateDragging = function() {
+        if (!this.isDraggable()) {
+          return;
+        }
+        // * Если мы уже двигаем окно, но мышка вышла за границы, то можно дальше двигать
+        // * Только если мышка не в окне и не двигали ранее, то не проверяем
+        if (this._mouseIn === false && this._dragging === false) {
+          return;
+        }
+        // * Если существует объект который сейчас dragging
+        if ($gameTemp.pkdDraggableInstance != null) {
+          // * Если этот объект не этот объект, то выходим из метода
+          if ($gameTemp.pkdDraggableInstance !== this) {
+            return;
+          }
+        }
+        if (TouchInput.isLongPressed()) {
+          if (this._dragging === false) {
+            this._onDragStart();
+          } else {
+            this._onDragging();
+          }
+        } else {
+          this._stopDragging();
+        }
+      };
+      _._onDragStart = function() {
+        // * Проверка, в области Header или нет
+        if (!this._isMouseInHeader()) {
+          return;
+        }
+        // * Разница в координатах курсора и объекта, чтобы убрать эффект "прыжка"
+        this.opacity = 200;
+        this._deltaXY = this.getDeltaXY();
+        this._dragging = true;
+        // * Устанавливаем глобальную ссылку на объект перемещения
+        $gameTemp.pkdDraggableInstance = this;
+      };
+      _.getDeltaXY = function() {
+        var p;
+        p = new KDCore.Point(this.x, this.y);
+        return p.delta(TouchInput);
+      };
+      _._onDragging = function() {
+        // * Защита от перетаскивания за края экрана
+        if (!this._isNewMousePositionOnScreen()) {
+          return;
+        }
+        this.move(TouchInput.x - this._deltaXY.x, TouchInput.y - this._deltaXY.y);
+        if (this._dragHandler != null) {
+          return this._dragHandler();
+        }
+      };
+      _._stopDragging = function() {
+        if (this._dragging === true) {
+          this._dragging = false;
+          this.opacity = 255;
+          this._clearDraggableGlocalInstance();
+          if (this._dragEndHandler != null) {
+            this._dragEndHandler();
+          }
+        }
+      };
+      // * Освобождаем глобальную ссылку
+      _._clearDraggableGlocalInstance = function() {
+        if ($gameTemp.pkdDraggableInstance === this) {
+          return $gameTemp.pkdDraggableInstance = null;
+        }
+      };
+      _._isMouseInHeader = function() {
+        if (this._headerSpr == null) {
+          return false;
+        }
+        return this._headerSpr.isContainsPoint(TouchInput);
+      };
+      _._isNewMousePositionOnScreen = function() {
+        return KDCore.Utils.isPointInScreen(TouchInput, 10);
+      };
+    })();
+    (function() {      // -----------------------------------------------------------------------
+
+      // * CREATE ELEMENTS
+      // -----------------------------------------------------------------------
+      
+      // * Слои нужны, так как изображения загружаються асинхронно
+      _._createLayers = function() {
+        this._mainLayer = new Sprite();
+        this._contentLayer = new Sprite();
+        this._headerLayer = new Sprite();
+        this._closeButtonLayer = new Sprite();
+        this.addChild(this._mainLayer);
+        this.addChild(this._contentLayer);
+        this.addChild(this._headerLayer);
+        this.addChild(this._closeButtonLayer);
+      };
+      _._loadWindowFrame = function() {
+        return KDCore.Utils.loadImageAsync(this.rootImageFolder(), "windowFrame").then(this._createWindow.bind(this));
+      };
+      _._createWindow = function(frameImage) {
+        this.bitmap = new Bitmap(this.windowW, this.windowH);
+        this.wFrame = new KDCore.Sprite_TilingFrame(this.windowW, this.windowH, frameImage);
+        this._mainLayer.addChild(this.wFrame);
+        this._createParts();
+      };
+      _._createParts = function() {
+        this._loadHeader();
+        if (this._isHaveCloseButton === true) {
+          this._createCloseButton();
+        }
+        this._moveToStartPosition();
+        this._createCustomElements();
+        // * Окно готово
+        this._isReady = true;
+        if (this._readyHandler != null) {
+          this._readyHandler();
+        }
+      };
+      _._loadHeader = function() {
+        return KDCore.Utils.loadImageAsync(this.rootImageFolder(), "headerLine").then(this._createHeader.bind(this));
+      };
+      _._createHeader = function(headerLineImage) {
+        var w;
+        w = this.windowW - (this.headerMarginX() * 2);
+        this._headerSpr = new KDCore.Sprite_TilingLine(w, headerLineImage.height, headerLineImage);
+        this._headerSpr.x = this.headerMarginX();
+        this._headerSpr.y = this.headerMarginY();
+        this._headerLayer.addChild(this._headerSpr);
+        if (this._isHeaderVisible === true) {
+          // * Сдвигаем контент, чтобы было начало под заголовком
+          this._contentLayer.y += headerLineImage.height + this.headerMarginY();
+        } else {
+          this._headerSpr.visible = false;
+        }
+      };
+      _._createCloseButton = function() {
+        this._closeButton = new KDCore.ButtonM("windowCloseButton", false, this.rootImageFolder());
+        this._closeButtonLayer.addChild(this._closeButton);
+        this._closeButton.move(this.closeButtonPosition());
+        this._closeButton.addClickHandler(this._closeButtonClick.bind(this));
+      };
+      // * Наследники создают свои элементы в этом методе
+      // * Есть специальный метод addContent()
+      _._createCustomElements = function() {}; // * EMPTY
+    })();
+    (function() {      // -----------------------------------------------------------------------
+
+      // * MOUSE
+      // -----------------------------------------------------------------------
+      
+      // * Определение если мышка в области окна
+      //TODO: Есть проблема при открытии окна сразу под курсором
+      _._registerMouseInOut = function() {
+        if (!this.isOpen()) {
+          return;
+        }
+        if (this.isMouseIn()) {
+          if (this._mouseIn === false) {
+            this._mouseIn = true;
+            this._onMouseIn();
+          }
+        } else {
+          if (this._mouseIn === true) {
+            this._mouseIn = false;
+            this._onMouseOut();
+          }
+        }
+      };
+      // * Используется похожая система что и в KDCore.ButtonM
+      _._onMouseIn = function() {
+        return $gameTemp.floatingWindowUnderMouse = this;
+      };
+      _._onMouseOut = function() {
+        if ($gameTemp.floatingWindowUnderMouse === this) {
+          return $gameTemp.floatingWindowUnderMouse = null;
+        }
+      };
+      // * Будем проверять мышка ли в окне только при открытом окне
+      _._createMouseCheckThread = function() {
+        this._mouseCheckThread = new KDCore.TimedUpdate(1, this._registerMouseInOut.bind(this));
+        this._updateMouseCheckThread = () => {
+          return this._mouseCheckThread.update();
+        };
+        return this._mouseCheckThread.call();
+      };
+      // * Когда окно закрывается, никаких проверок, обнуляем метод
+      _._destroyMouseCheckThread = function() {
+        this._mouseCheckThread = null;
+        return this._updateMouseCheckThread = function() {};
+      };
+      //?DYNAMIC
+      _._updateMouseCheckThread = function() {}; // * EMPTY
+    })();
+    (function() {      // -----------------------------------------------------------------------
+
+      // * OPEN OR CLOSE
+      // -----------------------------------------------------------------------
+      _._open = function() {
+        var ref;
+        this.visible = true;
+        $gameTemp._floatingWindows.push(this);
+        if (this._isAlwaysOnTop === true) {
+          // * Окно, которое открывается, всегда снова выше остальных (опция)
+          if ((ref = this.mainParent) != null) {
+            ref.addChild(this);
+          }
+        }
+        return this._createMouseCheckThread();
+      };
+      _._afterOpen = function() {}; // * EMPTY
+      _._close = function() {
+        this.visible = false;
+        if (this._isAlwaysOnTop === true) {
+          this.removeFromParent();
+        }
+        this._clearDraggableGlocalInstance();
+        $gameTemp._floatingWindows.delete(this);
+        this._onMouseOut();
+        return this._destroyMouseCheckThread();
+      };
+      _._afterClose = function() {}; // * EMPTY
     })();
   })();
-}
+  (function() {    // ■ END PRIVATE.coffee
+    //---------------------------------------------------------------------------
 
-// ■ END KDCore.coffee
-//---------------------------------------------------------------------------
-//? КОНЕЦ KDCORE
+    // * Если окно под курсором, нельзя нажимать на карте для движения игрока
+    // -----------------------------------------------------------------------
+    (function() {      //╒═════════════════════════════════════════════════════════════════════════╛
+      // ■ Scene_Map.coffee
+      //╒═════════════════════════════════════════════════════════════════════════╛
+      //---------------------------------------------------------------------------
+      var ALIAS__isAnyButtonPressed, ALIAS__processMapTouch, _;
+      
+      //@[DEFINES]
+      _ = Scene_Map.prototype;
+      if (KDCore.isMZ()) {
+        //@[ALIAS]
+        ALIAS__isAnyButtonPressed = _.isAnyButtonPressed;
+        _.isAnyButtonPressed = function() {
+          if ($gameTemp.floatingWindowUnderMouse != null) {
+            return true;
+          } else {
+            return ALIAS__isAnyButtonPressed.call(this);
+          }
+        };
+      } else {
+        //@[ALIAS]
+        ALIAS__processMapTouch = _.processMapTouch;
+        _.processMapTouch = function() {
+          if ($gameTemp.floatingWindowUnderMouse != null) {
+            return;
+          }
+          return ALIAS__processMapTouch.call(this);
+        };
+      }
+    })();
+  })();
+  //@[EXTEND]
+  // ■ END Scene_Map.coffee
+  //---------------------------------------------------------------------------
+  return KDCore.FloatingWindow = FloatingWindow;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var HUI;
+  // * Html UI Manager
+  // * Набор инструментов для работы с HTML элементами интерфейса
+  HUI = function() {};
+  (function() {
+    var _;
+    //@[DEFINES]
+    _ = HUI;
+    _.init = function() {
+      // * Данный набор инструментов могут использовать многие плагины, поэтому проверка
+      if (this.isInited()) {
+        return;
+      }
+      this._createMainParentInHtml();
+      this._extendGraphicsClass();
+      this.refresh();
+    };
+    // * Был ли создан (инициализирован) основной элемент
+    _.isInited = function() {
+      return this.parent() != null;
+    };
+    // * Основной элемент родитель для всех элементов UI
+    _.parent = function() {
+      return this._parent;
+    };
+    _.refresh = function() {
+      if (!this.isInited()) {
+        return;
+      }
+      Graphics._centerElement(this._parent);
+      this._parent.style.zIndex = 2;
+      this._parent.style.width = Graphics._canvas.style.width;
+      this._parent.style.height = Graphics._canvas.style.height;
+    };
+    _.addCSS = function(name, folder = "css") {
+      var head;
+      if (!this.isInited()) {
+        this.init();
+      }
+      head = document.getElementsByTagName("head")[0];
+      if (head != null) {
+        head.insertAdjacentHTML("beforeend", "<link rel=\"stylesheet\" href=\"$0/$1.css\" />".replace("$0", folder).replace("$1", name));
+      }
+    };
+    _.addElement = function(id, html, classes = null) {
+      var cls, element, i, len;
+      if (!this.isInited()) {
+        this.init();
+      }
+      element = document.createElement("div");
+      element.id = id;
+      element.innerHTML = html;
+      if (classes != null) {
+        for (i = 0, len = classes.length; i < len; i++) {
+          cls = classes[i];
+          element.classList.add(cls);
+        }
+      }
+      this._parent.appendChild(element);
+      return element;
+    };
+    // * Может быть NULL
+    _.getElement = function(id) {
+      return document.getElementById(id);
+    };
+    _.removeElement = function(element) {
+      if (element == null) {
+        return;
+      }
+      if (KDCore.SDK.isString(element)) {
+        this.removeElementById(element);
+      } else {
+        this.removeElementById(element.id);
+      }
+    };
+    _.removeElementById = function(elementId) {
+      var element;
+      if (!this.isInited()) {
+        return;
+      }
+      element = this.getElement(elementId);
+      if (element != null) {
+        this._parent.removeChild(element);
+      }
+    };
+    // * PRIVATE ------------------------------------------------------------------
+    _._createMainParentInHtml = function() {
+      this._parent = document.createElement("div");
+      this._parent.id = "KDCoreMain";
+      document.body.appendChild(this._parent);
+    };
+    _._extendGraphicsClass = function() {
+      var ALIAS___updateCanvas;
+      //@[ALIAS]
+      ALIAS___updateCanvas = Graphics._updateCanvas;
+      Graphics._updateCanvas = function() {
+        ALIAS___updateCanvas.call(this);
+        return KDCore.HUI.refresh();
+      };
+    };
+  })();
+  //@[EXTEND]
+  return KDCore.HUI = HUI;
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var ALIAS___onMouseUp, ALIAS___onRightButtonDown, ALIAS__clear, ALIAS__update, _;
+  // * Right mouse pressed
+  // * Определение когда правая (вторая) кнопка мыши зажата и удерживается
+
+  //@[DEFINES]
+  _ = TouchInput;
+  //@[ALIAS]
+  ALIAS__clear = _.clear;
+  _.clear = function() {
+    ALIAS__clear.call(this);
+    this._kdMousePressed2 = false;
+    this._kdPressedTime2 = 0;
+  };
+  //@[ALIAS]
+  ALIAS___onRightButtonDown = _._onRightButtonDown;
+  _._onRightButtonDown = function(event) {
+    var check;
+    ALIAS___onRightButtonDown.call(this, event);
+    // * Это значит что ALIAS метод прошёл (верные X и Y в Canvas)
+    if (KDCore.isMZ()) {
+      check = this._newState.cancelled === true;
+    } else {
+      check = this._events.cancelled === true;
+    }
+    if (check === true) {
+      this._kdMousePressed2 = true;
+      this._kdPressedTime2 = 0;
+    }
+  };
+  //@[ALIAS]
+  ALIAS___onMouseUp = _._onMouseUp;
+  _._onMouseUp = function(event) {
+    ALIAS___onMouseUp.call(this, event);
+    if (event.button === 2) {
+      this._kdMousePressed2 = false;
+    }
+  };
+  //@[ALIAS]
+  ALIAS__update = _.update;
+  _.update = function() {
+    ALIAS__update.call(this);
+    if (this.kdIsPressed2()) {
+      return this._kdPressedTime2++;
+    }
+  };
+  //?[NEW]
+  return _.kdIsPressed2 = function() {
+    return this._kdMousePressed2 === true;
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  // * Методы из RPG Maker MZ которых нет в RPG Maker MV
+  if (KDCore.isMZ()) {
+    return;
+  }
+  (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Scene_Base.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    
+    //@[DEFINES]
+    _ = Scene_Base.prototype;
+    _.calcWindowHeight = function(numLines, selectable) {
+      if (selectable === true) {
+        return Window_Selectable.prototype.fittingHeight(numLines);
+      } else {
+        return Window_Base.prototype.fittingHeight(numLines);
+      }
+    };
+  })();
+  (function() {    // ■ END Scene_Base.coffee
+    //---------------------------------------------------------------------------
+
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Window_Selectable.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    
+    //@[DEFINES]
+    _ = Window_Selectable.prototype;
+    _.itemLineRect = function(index) {
+      return this.itemRect(index);
+    };
+  })();
+  (function() {    // ■ END Window_Selectable.coffee
+    //---------------------------------------------------------------------------
+
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Window_Base.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var ALIAS__initialize, ALIAS__processEscapeCharacter, _;
+    //@[DEFINES]
+    _ = Window_Base.prototype;
+    // * Чтоб можно было Rectangle принимать в конструктор
+    //@[ALIAS]
+    ALIAS__initialize = _.initialize;
+    _.initialize = function(x, y, w, h) {
+      if (x instanceof PIXI.Rectangle || x instanceof Rectangle) {
+        return ALIAS__initialize.call(this, x.x, x.y, x.width, x.height);
+      } else {
+        return ALIAS__initialize.call(this, ...arguments);
+      }
+    };
+    
+    // * В MZ используется FS для изменения размера шрифта в тексте
+    //@[ALIAS]
+    ALIAS__processEscapeCharacter = _.processEscapeCharacter;
+    _.processEscapeCharacter = function(code, textState) {
+      if (code === "FS") {
+        this.contents.fontSize = this.obtainEscapeParam(textState);
+      } else {
+        ALIAS__processEscapeCharacter.call(this, code, textState);
+      }
+    };
+  })();
+  (function() {    // ■ END Window_Base.coffee
+    //---------------------------------------------------------------------------
+
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Spriteset_Map.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    
+    //@[DEFINES]
+    _ = Spriteset_Map.prototype;
+    _.findTargetSprite = function(target) {
+      return this._characterSprites.find(function(sprite) {
+        return sprite.checkCharacter(target);
+      });
+    };
+  })();
+  return (function() {    // ■ END Spriteset_Map.coffee
+    //---------------------------------------------------------------------------
+
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ Sprite_Character.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var _;
+    
+    //@[DEFINES]
+    _ = Sprite_Character.prototype;
+    _.checkCharacter = function(character) {
+      return this._character === character;
+    };
+  })();
+});
+
 // ■ END Sprite_Character.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
-(function() {
-  var alias_atbs_input_onKeyDown, alias_atbs_input_onKeyUp, i, j, k, l;
-  Input.KeyMapperPKD = {};
-//Numbers
-  for (i = j = 48; j <= 57; i = ++j) {
-    Input.KeyMapperPKD[i] = String.fromCharCode(i);
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var alias_SM_processMapTouch, alias_TIOMM;
+  //?SMouse better alternative
+  if (KDCore.isMZ()) {
+    return;
   }
-//Letters Upper
-  for (i = k = 65; k <= 90; i = ++k) {
-    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
+  // * Для ButtonM
+  //@[ALIAS]
+  alias_SM_processMapTouch = Scene_Map.prototype.processMapTouch;
+  Scene_Map.prototype.processMapTouch = function() {
+    if ($gameTemp.kdButtonUnderMouse != null) {
+      if ($gameTemp.kdButtonUnderMouse.parent == null) {
+        return $gameTemp.kdButtonUnderMouse = null;
+      } else {
+
+      }
+    } else {
+      return alias_SM_processMapTouch.call(this);
+    }
+  };
+  //@[ALIAS]
+  alias_TIOMM = TouchInput._onMouseMove;
+  TouchInput._onMouseMove = function(event) {
+    var x, y;
+    alias_TIOMM.call(this, event);
+    x = Graphics.pageToCanvasX(event.pageX);
+    y = Graphics.pageToCanvasY(event.pageY);
+    if (Graphics.isInsideCanvas(x, y)) {
+      return this._onHover(x, y);
+    }
+  };
+  
+  //?NEW, from MZ
+  return TouchInput._onHover = function(_x, _y) {
+    this._x = _x;
+    this._y = _y;
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var ALIAS__clear, ALIAS__update, _;
+  if (KDCore.isMZ()) {
+    return;
   }
-//Letters Lower (for key code events)
-  for (i = l = 97; l <= 122; i = ++l) {
-    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
-  }
-  alias_atbs_input_onKeyDown = Input._onKeyDown;
-  Input._onKeyDown = function(event) {
-    alias_atbs_input_onKeyDown.call(this, event);
-    if (Input.keyMapper[event.keyCode]) {
+  //@[DEFINES]
+  _ = Input;
+  //@[ALIAS]
+  ALIAS__clear = _.clear;
+  _.clear = function() {
+    ALIAS__clear.call(this);
+    return this._virtualButton = null;
+  };
+  //@[ALIAS]
+  ALIAS__update = _.update;
+  _.update = function() {
+    ALIAS__update.call(this);
+    if (this._virtualButton == null) {
       return;
     }
-    Input._setStateWithMapperPKD(event.keyCode);
+    this._latestButton = this._virtualButton;
+    this._pressedTime = 0;
+    return this._virtualButton = null;
   };
-  Input._setStateWithMapperPKD = function(keyCode, state = true) {
-    var symbol;
-    symbol = Input.KeyMapperPKD[keyCode];
-    if (symbol != null) {
-      this._currentState[symbol] = state;
-    }
+  return _.virtualClick = function(buttonName) {
+    return this._virtualButton = buttonName;
   };
-  alias_atbs_input_onKeyUp = Input._onKeyUp;
-  Input._onKeyUp = function(event) {
-    alias_atbs_input_onKeyUp.call(this, event);
-    if (Input.keyMapper[event.keyCode]) {
-      return;
-    }
-    Input._setStateWithMapperPKD(event.keyCode, false);
-  };
-  Input.isCancel = function() {
-    return Input.isTriggered('cancel') || TouchInput.isCancelled();
-  };
-  Input.KeyMapperPKDUNSAFE = ['q', 'w', 'x', 'z', 'space'];
-  Input.convertUnsafeSymbols = function(symbol) {
-    if (symbol == null) {
-      return '';
-    }
-    symbol = symbol.toLowerCase();
-    if (!Input.KeyMapperPKDUNSAFE.include(symbol)) {
-      return symbol;
-    }
-    if (symbol === 'q') {
-      return 'pageup';
-    }
-    if (symbol === 'w') {
-      return 'pagedown';
-    }
-    if (symbol === 'x') {
-      return 'escape';
-    }
-    if (symbol === 'z') {
-      return 'ok';
-    }
-    if (symbol === 'space') {
-      return 'ok';
-    }
-  };
-})();
+});
 
-// Generated by CoffeeScript 2.5.1
 
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var ALIAS___startLoading, _;
+  // * В версии RPG Maker MZ 1.5.0 появился баг что картинки не успевают прогрузится
+  // * Данный фикс, возвращает старое поведение
+  if (!KDCore.isMZ()) {
+    return;
+  }
+  //@[DEFINES]
+  _ = Bitmap.prototype;
+  //@[ALIAS]
+  ALIAS___startLoading = _._startLoading;
+  return _._startLoading = function() {
+    if (Utils.hasEncryptedImages()) {
+      ALIAS___startLoading.call(this, ...arguments);
+    } else {
+      // * Это из RPG Maker MZ до версии 1.5
+      this._image = new Image();
+      this._image.onload = this._onLoad.bind(this);
+      this._image.onerror = this._onError.bind(this);
+      this._destroyCanvas();
+      this._loadingState = "loading";
+      this._image.src = this._url;
+    }
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+KDCore.registerLibraryToLoad(function() {
+  var alias_WBDTEX_KDCore29122021;
+  // * <center>, для RPG Maker MZ и если нету Visu Message Core
+  if (KDCore.isMZ()) {
+    alias_WBDTEX_KDCore29122021 = Window_Base.prototype.drawTextEx;
+    Window_Base.prototype.drawTextEx = function(text, x, y, width) {
+      var e, newText;
+      try {
+        if (Imported.VisuMZ_1_MessageCore !== true) { // * В Visu уже есть <center>
+          if (String.any(text) && text.contains("<center>")) {
+            if (text[0] === "<" && text[1] === "c") { // * Должен быть в начале строки
+              newText = text.replace("<center>", "");
+              this.drawTextExInCenter(newText, x, y, width);
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+      }
+      alias_WBDTEX_KDCore29122021.call(this, ...arguments);
+    };
+  }
+  //?NEW
+  Window_Base.prototype.drawTextExInCenter = function(text, x, y, width, height) {
+    var e, newX, newY, textSize;
+    try {
+      if (KDCore.isMV()) { // * В MV нет поддержки данного метода
+        this.drawTextEx(...arguments);
+        return;
+      }
+      textSize = this.textSizeEx(text);
+      newX = x + width / 2 - textSize.width / 2;
+      if ((height != null) && height > 0) {
+        newY = y + height / 2 - textSize.height / 2;
+      } else {
+        newY = y;
+      }
+      this.drawTextEx(text, newX, newY, width);
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      this.drawTextEx(text, x, y, width);
+    }
+  };
+  //?NEW
+  Window_Base.prototype.drawTextExWithWordWrap = function(text, x, y, width, maxLines) {
+    var maxWidth, wrappedText;
+    maxWidth = this.contentsWidth();
+    wrappedText = Window_Message.prototype.pWordWrap.call(this, text, width || maxWidth, maxLines);
+    this.drawTextEx(wrappedText, x, y, width);
+  };
+  //?NEW
+  return Window_Message.prototype.pWordWrap = function(text, maxWidth, maxLines) {
+    var i, j, k, l, line, lines, newLines, ref, ref1, result, spaceLeft, spaceWidth, wordWidth, wordWidthWithSpace, words;
+    lines = text.split('\n');
+    maxWidth = maxWidth;
+    spaceWidth = this.contents.measureTextWidth(' ');
+    result = '';
+    newLines = 1;
+    for (i = k = 0, ref = lines.length; (0 <= ref ? k < ref : k > ref); i = 0 <= ref ? ++k : --k) {
+      spaceLeft = maxWidth;
+      line = lines[i];
+      words = line.split(' ');
+      for (j = l = 0, ref1 = words.length; (0 <= ref1 ? l < ref1 : l > ref1); j = 0 <= ref1 ? ++l : --l) {
+        wordWidth = this.contents.measureTextWidth(words[j]);
+        wordWidthWithSpace = wordWidth + spaceWidth;
+        if (j === 0 || wordWidthWithSpace > spaceLeft) {
+          if (j > 0) {
+            if (maxLines === newLines) {
+              return result;
+            }
+            result += '\n';
+            newLines++;
+          }
+          result += words[j];
+          spaceLeft = maxWidth - wordWidth;
+          if (j === 0 && line.match(/\\n\w*\s*<\s*\\n\[\w*\s*\]\s*>*/gi)) {
+            spaceLeft += 200;
+          }
+        } else {
+          spaceLeft -= wordWidthWithSpace;
+          result += ' ' + words[j];
+        }
+      }
+      if (i < lines.length - 1) {
+        result += '\n';
+      }
+    }
+    return result;
+  };
+});
+
+
+// Generated by CoffeeScript 2.6.1
+// * Последний файл (после всех классов)
+// * Загружает библиотеки
+var i, len, lib, ref, text;
+
+if (KDCore._requireLoadLibrary === true) {
+  ref = KDCore[KDCore._loader];
+  for (i = 0, len = ref.length; i < len; i++) {
+    lib = ref[i];
+    lib();
+  }
+  KDCore[KDCore._loader] = [];
+  text = "%c  KDCore is loaded " + KDCore.Version;
+  console.log(text, 'background: #222; color: #82b2ff');
+}
+
+// ==========================================================================
+// ==========================================================================
+
+//   END OF PLUGINS CORE LIBRARY
+//   (Next code is this plugin code)
+
+// ==========================================================================
+// ==========================================================================
+
+//Plugin KDCore builded by PKD PluginBuilder 2.1 - 21.06.2022
 
 (function () {
 
@@ -4180,7 +8249,6 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
             if (PKD_MI.isPro()) {
                 try {
                     $gameTemp._visualChestRestrictionTypes = [];
-                    this._aaPrepareVisualChestStored();
                     if (args[0]) {
                         PKD_MI.setChestName(args[0]);
                     }
@@ -4190,6 +8258,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
                     if (args[2]) {
                         MISetIconForChest(args[2]);
                     }
+                    this._aaPrepareVisualChestStored();
                 } catch (e) {
                     PKD_MI.warning('VisualChestStored plugin command', e);
                 }
@@ -4298,6 +8367,441 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     }
 
 })();
+
+(function(){
+    
+    if (KDCore.isMZ()) {
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_VisualChest', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                    PKD_MI.setChestName(args.name);
+                    $gameMap._interpreter._aaPrepareVisualChest();
+                    if(String.any(args.image)) {
+                        MISetIconForChest(args.image);
+                    }
+                    // * NO limit for Visual Chest (no stored)
+                    $gameTemp.__aaVisualChestLimitCount = null;
+                } else {
+                    window.alert("Map Inventory: Visual Chests works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_VisualChestStored', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                    PKD_MI.setChestName(args.name);
+                    if(Boolean(args.forTrade) == true) {
+                        $gameTemp.__pkdMiTradeChestId = args.name;
+                    } else {
+                        $gameTemp.__pkdMiTradeChestId = null;
+                    }
+                    $gameTemp._visualChestRestrictionTypes = [];
+                    $gameMap._interpreter._aaPrepareVisualChestStored();
+                    if (args.types && args.types != "")
+                        PKD_MI.setChestItemTypeLimit(args.types);
+                    if(String.any(args.image)) {
+                        MISetIconForChest(args.image);
+                    }
+                    let limit = parseInt(args.limit);
+                    if(limit > 0) {
+                        $gameTemp.__aaVisualChestLimitCount = limit;
+                    } else {
+                        $gameTemp.__aaVisualChestLimitCount = null;
+                    }
+                } else {
+                    window.alert("Map Inventory: Visual Chests works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Inventory_State', args => {
+            try {
+                let state = eval(args.state);
+                if(state == true) {
+                    EnableMapInventory();
+                } else {
+                    DisableMapInventory();
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }); 
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_UserChestOpen', args => {
+            try {
+                OpenMapUserChest();
+            } catch (e) {
+                console.warn(e);
+            }
+        }); 
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Move', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                        let x = parseInt(args.X);
+                        let y = parseInt(args.Y);
+                        $gameSystem.getPKIButtonSettings().position = [x, y];
+                        PKD_MI.refreshInventoryButton();
+                } else {
+                    window.alert("Map Inventory: UI Button works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Visibility', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                    let state = eval(args.state);
+                    $gameSystem.getPKIButtonSettings().visibility = state;
+                    PKD_MI.refreshInventoryButton();
+                } else {
+                    window.alert("Map Inventory: UI Button works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_State', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                    let state = eval(args.state);
+                    $gameSystem.getPKIButtonSettings().disable = !state;
+                    PKD_MI.refreshInventoryButton();
+                } else {
+                    window.alert("Map Inventory: UI Button works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }); 
+        
+        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Reset', args => {
+            try {
+                if (PKD_MI.isPro()) {
+                    $gameSystem.pkmiButtonSettings = null;
+                    PKD_MI.refreshInventoryButton();
+                } else {
+                    window.alert("Map Inventory: UI Button works only in PRO version");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+    }
+
+})();
+
+// * FOR MV
+
+(function(){
+
+    if(KDCore.isMZ()) return;
+
+    if(!DataManager.onXhrLoad)
+        DataManager.onXhrLoad = function(xhr, name, src, url) {
+            if (xhr.status < 400) {
+                window[name] = JSON.parse(xhr.responseText);
+                DataManager.onLoad(window[name]);
+            } else {
+                
+            }
+        };
+    
+})();
+
+
+
+(function(){
+
+    ImageManager.loadPKDMI('background');
+
+    isInMousePosition = function (sprite, dx, dy) {
+        function inRect(point, rect) {
+            var x2, y2;
+            try {
+                x2 = rect.x + rect.width;
+                y2 = rect.y + rect.height;
+                return point.x > rect.x && point.x < x2 && point.y < y2 && point.y > rect.y;
+            } catch (error) {
+                
+            }
+        }
+        if (dx === undefined)
+            dx = 0;
+        if (dy === undefined)
+            dy = 0;
+        var rect, rx, ry;
+        rx = KDCore.SDK.toGlobalCoord(sprite, 'x');
+        ry = KDCore.SDK.toGlobalCoord(sprite, 'y');
+        rect = new Rectangle(rx - dx, ry - dy, sprite.width + (dx * 2), sprite.height + (dy * 2));
+        return inRect(TouchInput, rect);
+    };
+
+    function Sprite_NumberSlider() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Sprite_NumberSlider.prototype = Object.create(Sprite.prototype);
+    Sprite_NumberSlider.prototype.constructor = Sprite_NumberSlider;
+
+    Sprite_NumberSlider.prototype.initialize = function (callback, valueChangeCallback) {
+        Sprite.prototype.initialize.call(this);
+        this.afterLoadCallback = callback;
+        this.valueChangeCallback = valueChangeCallback;
+        this._create();
+    };
+
+    //?[NEW]
+    Sprite_NumberSlider.prototype.update = function () {
+        Sprite.prototype.update.call(this);
+        this.updateSliderMoveByMouse();
+    };
+
+    PKD_MI.register(Sprite_NumberSlider);
+
+    //@[IMPLEMENTATION]
+    (function () {
+
+        //@[DEFINES]
+        var _ = Sprite_NumberSlider.prototype;
+        var __ = null; //@[PRE]
+
+        _.terminate = function() {
+            this.visible = false;
+            if(this.parent)
+                this.parent.removeChild(this);
+            if(KDCore.isMV())
+                this.destroy();
+        };
+
+        //?[NEW]
+        _._create = function () {
+            __ = PKD_MI.getUIMapInventorySettings().itemSliderSettings;
+            this._loadSliderResources();
+            this.bitmap = ImageManager.loadPKDMI('background');
+            if(this.bitmap.isReady()) {
+                this._createAfterLoad();
+            } else
+                this.bitmap.addLoadListener(_._createAfterLoad.bind(this));
+        };
+
+        //?[NEW]
+        _._loadSliderResources = function () {
+            ImageManager.loadPKDMI('background');
+            ImageManager.loadPKDMI('fill');
+            ImageManager.loadPKDMI('slider');
+        };
+
+        //?[NEW]
+        _._createAfterLoad = function () {
+            if (!this.bitmap.width) return;
+            this._ww = this.bitmap.width;
+            //this._createIcon();
+            this._createFill();
+            this._mouseZone = new Sprite(new Bitmap(this.width + 20, this.height + (__.zoneDY * 2)));
+            this._mouseZone.move(-10, -__.zoneDY);
+            this.addChild(this._mouseZone);
+            if(this.afterLoadCallback)
+                this.afterLoadCallback();
+        };
+
+        //?[NEW]
+        _._createFill = function () {
+            var fillBitmap = ImageManager.loadPKDMI('fill');
+            var fillImg = new Sprite(fillBitmap);
+            fillBitmap.addLoadListener(function () {
+                var sliderFill = new Sprite(new Bitmap(fillBitmap.width, fillBitmap.height));
+                this.sliderFill = sliderFill;
+                this.addChild(this.sliderFill);
+                this._createSlider();
+            }.bind(this));
+            this.fillImg = fillImg;
+        };
+
+        //?[NEW]
+        _._createSlider = function () {
+            this.sliderSprite = new Sprite(ImageManager.loadPKDMI('slider'));
+            this.sliderSprite.anchor.x = 0.5;
+            this.sliderSprite.move(__.sliderMarginX, __.sliderMarginY);
+            this.addChild(this.sliderSprite);
+
+            function applyS() {
+                this.setPercent(1);
+            }
+
+            setTimeout(applyS.bind(this), 20);
+            setTimeout(applyS.bind(this), 50);
+            setTimeout(applyS.bind(this), 100);
+        };
+
+        //?[NEW]
+        _.setPercent = function (percent) {
+            try {
+                if (!this.sliderFill)
+                    return;
+                if (!this.fillImg)
+                    return;
+                if (percent === undefined)
+                    percent = 1;
+                if (percent > 1)
+                    percent = 1;
+                var w = this.fillImg.width * percent;
+                this._fillSliderBy(w);
+            } catch (e) {
+                console.warn(e);
+            }
+        };
+
+        //?[NEW]
+        _._fillSliderBy = function (w) {
+            //"fill0".p(w);
+            this.sliderFill.bitmap.clear();
+            this.sliderFill.bitmap.blt(this.fillImg.bitmap, 0, 0, w, this.fillImg.height, 0, 0);
+            this.sliderSprite.move(__.sliderMarginX + w - __.sliderDX, __.sliderMarginY);
+        };
+
+        //?[NEW]
+        _._applyValueSettings = function (w) {
+            var percent = (w / this.fillImg.width);
+            percent = ~~(percent * 100);
+            if (percent < 0)
+                percent = 0;
+            if (percent > 99)
+                percent = 100;
+            //PKD_MI.onSliderValueChanged(percent);
+            this.valueChangeCallback(percent);
+            this.setPercent(percent / 100);
+        };
+
+        _.isInMousePositionAll = function() {
+            return isInMousePosition(this._mouseZone, 0, 0);
+        };
+
+        _.isInMousePositionHandler = function() {
+            return isInMousePosition(this.sliderSprite, 5, 5);
+        };
+
+        //?[NEW]
+        _.updateSliderMoveByMouse = function () {
+            if (!this.sliderSprite)
+                return;
+            if (!this._mouseZone)
+                return;
+            if (this.isInMousePositionHandler()) {
+                this._canMoveSlider = true;
+            }
+            if (!this.isInMousePositionAll()) {
+                this._canMoveSlider = false;
+            } else {
+                if (TouchInput.isTriggered() && this._canMoveSlider == false) {
+                    this._moveSliderByMouse();
+                }
+            }
+
+            if (this._canMoveSlider) {
+                if (TouchInput.isPressed()) {
+                    this._moveSliderByMouse();
+                }
+            }
+        };
+
+        //?[NEW]
+        _._moveSliderByMouse = function () {
+            var localMPX = KDCore.SDK.canvasToLocalX(this, TouchInput.x);
+            if (localMPX <= this.fillImg.width) {
+                this._fillSliderBy(localMPX);
+                this._applyValueSettings(localMPX);
+            }
+        };
+
+    })();
+    // ===============================================================================
+})();
+
+// Generated by CoffeeScript 2.5.1
+(function() {
+  var alias_atbs_input_onKeyDown, alias_atbs_input_onKeyUp, i, j, k, l;
+  Input.KeyMapperPKD = {};
+//Numbers
+  for (i = j = 48; j <= 57; i = ++j) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i);
+  }
+//Letters Upper
+  for (i = k = 65; k <= 90; i = ++k) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
+  }
+//Letters Lower (for key code events)
+  for (i = l = 97; l <= 122; i = ++l) {
+    Input.KeyMapperPKD[i] = String.fromCharCode(i).toLowerCase();
+  }
+  alias_atbs_input_onKeyDown = Input._onKeyDown;
+  Input._onKeyDown = function(event) {
+    alias_atbs_input_onKeyDown.call(this, event);
+    if (Input.keyMapper[event.keyCode]) {
+      return;
+    }
+    Input._setStateWithMapperPKD(event.keyCode);
+  };
+  Input._setStateWithMapperPKD = function(keyCode, state = true) {
+    var symbol;
+    symbol = Input.KeyMapperPKD[keyCode];
+    if (symbol != null) {
+      this._currentState[symbol] = state;
+    }
+  };
+  alias_atbs_input_onKeyUp = Input._onKeyUp;
+  Input._onKeyUp = function(event) {
+    alias_atbs_input_onKeyUp.call(this, event);
+    if (Input.keyMapper[event.keyCode]) {
+      return;
+    }
+    Input._setStateWithMapperPKD(event.keyCode, false);
+  };
+  Input.isCancel = function() {
+    return Input.isTriggered('cancel') || TouchInput.isCancelled();
+  };
+  Input.KeyMapperPKDUNSAFE = ['q', 'w', 'x', 'z', 'space'];
+  Input.convertUnsafeSymbols = function(symbol) {
+    if (symbol == null) {
+      return '';
+    }
+    symbol = symbol.toLowerCase();
+    if (!Input.KeyMapperPKDUNSAFE.include(symbol)) {
+      return symbol;
+    }
+    if (symbol === 'q') {
+      return 'pageup';
+    }
+    if (symbol === 'w') {
+      return 'pagedown';
+    }
+    if (symbol === 'x') {
+      return 'escape';
+    }
+    if (symbol === 'z') {
+      return 'ok';
+    }
+    if (symbol === 'space') {
+      return 'ok';
+    }
+  };
+})();
+
+
+// Generated by CoffeeScript 2.5.1
+
+
+
 // Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ PKD_INV_UI.coffee
@@ -4531,15 +9035,32 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     }
   };
   // * ============================ UPDATE 1.2 =========================
-  //u20
+  //u20, u23
   _.partyGroup = function() {
+    var filter, j, len, m, members, newMembers;
     if (this.IsNETZM()) {
       return [$gameParty.leader()];
     } else {
       if (PKD_MI.Parameters.get_Allow8()) {
-        return $gameParty.allMembers();
+        members = $gameParty.allMembers();
       } else {
-        return $gameParty.battleMembers();
+        members = $gameParty.battleMembers();
+      }
+      // * Фильтр, чтобы убирать из Selector запрещённых в параметрах персонажей
+      filter = PKD_MI.Parameters.getForbiddenActorsForPartySelector();
+      if (filter.length > 0) {
+        newMembers = [];
+        for (j = 0, len = members.length; j < len; j++) {
+          m = members[j];
+          if (filter.contains(m.actorId())) {
+            continue;
+          } else {
+            newMembers.push(m);
+          }
+        }
+        return newMembers;
+      } else {
+        return members;
       }
     }
   };
@@ -4761,10 +9282,13 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
   _.FromImgI = function(filename) {
     return KDCore.Sprite.FromImg(filename, 'pMapInventory');
   };
-  //?u19
+  //?u19, u23
   // * ============================ UPDATE 1.9 =========================
   _.ApplyPluginsExtensions = function() {
     var __alias_GI_MOG_RP;
+    if (Imported.PKD_ExtendedLoot === true) {
+      PKD_MI.LoadExt_ExtendedLoot();
+    }
     if (Imported.MOG_TreasurePopup === true) {
       __alias_GI_MOG_RP = Game_Interpreter.prototype.checkTreasurePopup;
       return Game_Interpreter.prototype.checkTreasurePopup = function(type, params) {
@@ -4824,10 +9348,97 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     }
     return AA.Utils.isAAObject(item);
   };
+  //?u22
+  // * ============================ UPDATE 2.2 =========================
+  _.invShowNewCategory = function(tag, index) {
+    var e;
+    try {
+      if (this.eUI == null) {
+        return;
+      }
+      if (tag === "inventory") {
+        this.eUI.openCategory(index);
+      } else {
+        this.eUI.openUserChestCategory(index);
+      }
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+    }
+  };
+  _.isNewCatsSys = function() {
+    return PKD_MI.Parameters.isUseNewCategoriesSystem();
+  };
+  _.getNewCategories = function() {
+    return PKD_MI.Parameters.getNewCategories();
+  };
+  _.getNewCatgoriesSize = function() {
+    return this.getNewCategories().length;
+  };
+  //?u23
+  // * ============================ UPDATE 2.3 =========================
+  _._removeEscapeChars = function(text) {
+    text = text.replace(/\\/g, "\x1b");
+    text = text.replace(/\x1bV\[(\d+)\]/gi, "");
+    text = text.replace(/\x1bI\[(\d+)\]/gi, "");
+    text = text.replace(/\x1bC\[(\d+)\]/gi, "");
+    return text;
+  };
+  _.getItemOnlyActorIdUsecase = function(item) {
+    var e;
+    if (item == null) {
+      return 0;
+    }
+    if (item.meta == null) {
+      return 0;
+    }
+    if (!item.meta.iOnlyForActor) {
+      return 0;
+    }
+    try {
+      return parseInt(item.meta.iOnlyForActor);
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      return 0;
+    }
+  };
+  _.isHaveActorIdInParty = function(actorId) {
+    var actor, e;
+    try {
+      actor = $gameParty.allMembers().find(function(a) {
+        return a.actorId() === actorId;
+      });
+      return actor != null;
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      return false;
+    }
+  };
+  _.showExternalHelpWindow = function(cell) {
+    var e, ref;
+    try {
+      return (ref = this.eUI) != null ? ref._createHelpWindow(cell, false) : void 0;
+    } catch (error) {
+      e = error;
+      return KDCore.warning(e);
+    }
+  };
+  _.closeExternalHelpWindow = function() {
+    var e, ref;
+    try {
+      return (ref = this.eUI) != null ? ref._hideHelp() : void 0;
+    } catch (error) {
+      e = error;
+      return KDCore.warning(e);
+    }
+  };
 })();
 
 // ■ END PKD_INV_UI.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.6.1
 (function() {
@@ -5012,138 +9623,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
   };
 })();
 
-(function(){
-    
-    if (KDCore.isMZ()) {
 
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_VisualChest', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                    PKD_MI.setChestName(args.name);
-                    $gameMap._interpreter._aaPrepareVisualChest();
-                    if(String.any(args.image)) {
-                        MISetIconForChest(args.image);
-                    }
-                    // * NO limit for Visual Chest (no stored)
-                    $gameTemp.__aaVisualChestLimitCount = null;
-                } else {
-                    window.alert("Map Inventory: Visual Chests works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        });
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_VisualChestStored', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                    PKD_MI.setChestName(args.name);
-                    if(Boolean(args.forTrade) == true) {
-                        $gameTemp.__pkdMiTradeChestId = args.name;
-                    } else {
-                        $gameTemp.__pkdMiTradeChestId = null;
-                    }
-                    $gameTemp._visualChestRestrictionTypes = [];
-                    $gameMap._interpreter._aaPrepareVisualChestStored();
-                    if (args.types && args.types != "")
-                        PKD_MI.setChestItemTypeLimit(args.types);
-                    if(String.any(args.image)) {
-                        MISetIconForChest(args.image);
-                    }
-                    let limit = parseInt(args.limit);
-                    if(limit > 0) {
-                        $gameTemp.__aaVisualChestLimitCount = limit;
-                    } else {
-                        $gameTemp.__aaVisualChestLimitCount = null;
-                    }
-                } else {
-                    window.alert("Map Inventory: Visual Chests works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        });
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Inventory_State', args => {
-            try {
-                let state = eval(args.state);
-                if(state == true) {
-                    EnableMapInventory();
-                } else {
-                    DisableMapInventory();
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        }); 
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_UserChestOpen', args => {
-            try {
-                OpenMapUserChest();
-            } catch (e) {
-                console.warn(e);
-            }
-        }); 
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Move', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                        let x = parseInt(args.X);
-                        let y = parseInt(args.Y);
-                        $gameSystem.getPKIButtonSettings().position = [x, y];
-                        PKD_MI.refreshInventoryButton();
-                } else {
-                    window.alert("Map Inventory: UI Button works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        });
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Visibility', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                    let state = eval(args.state);
-                    $gameSystem.getPKIButtonSettings().visibility = state;
-                    PKD_MI.refreshInventoryButton();
-                } else {
-                    window.alert("Map Inventory: UI Button works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        });
-
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_State', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                    let state = eval(args.state);
-                    $gameSystem.getPKIButtonSettings().disable = !state;
-                    PKD_MI.refreshInventoryButton();
-                } else {
-                    window.alert("Map Inventory: UI Button works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        }); 
-        
-        PluginManager.registerCommand(PKD_MI.PluginName, 'MI_Button_Reset', args => {
-            try {
-                if (PKD_MI.isPro()) {
-                    $gameSystem.pkmiButtonSettings = null;
-                    PKD_MI.refreshInventoryButton();
-                } else {
-                    window.alert("Map Inventory: UI Button works only in PRO version");
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-        });
-
-    }
-
-})();
 // Generated by CoffeeScript 2.6.1
 // * Эти вызовы используются вместо команд плагина
 (function() {
@@ -5239,7 +9719,14 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       return console.warn(e);
     }
   };
+  window.MI_SetSelectModeW = function() {
+    return $gameTemp._miESM = 1;
+  };
+  window.MI_SetSelectModeA = function() {
+    return $gameTemp._miESM = 2;
+  };
 })();
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -5358,24 +9845,6 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 // ■ END DataManager.coffee
 //---------------------------------------------------------------------------
 
-// * FOR MV
-
-(function(){
-
-    if(KDCore.isMZ()) return;
-
-    if(!DataManager.onXhrLoad)
-        DataManager.onXhrLoad = function(xhr, name, src, url) {
-            if (xhr.status < 400) {
-                window[name] = JSON.parse(xhr.responseText);
-                DataManager.onLoad(window[name]);
-            } else {
-                
-            }
-        };
-    
-})();
-
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -5413,6 +9882,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
 // ■ END Game_Actor.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -5711,7 +10181,8 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 // ■ END Game_Interpreter.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Game_Party.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -5840,6 +10311,10 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
   };
   _.getCurrentWeight = function() {
     var f, items, w;
+    if (!PKD_MI.Parameters.get_UsedWSystem()) {
+      // * Если система веса отключена, то текущий вес всегда 0
+      return 0;
+    }
     items = this.allItems();
     f = function(a, b) {
       return a + (DataManager.getItemWeight(b) * $gameParty.numItems(b));
@@ -5907,14 +10382,45 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
         // * If player already have item, we can add to same slot
         return true;
       }
-      catIndex = DataManager.getMIIItemCategoryIndex(item);
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        catIndex = this.miTryGetItemNewCategoryIndex(item);
+      } else {
+        catIndex = DataManager.getMIIItemCategoryIndex(item);
+      }
       return this.isHaveFreeSlotInCategory(catIndex);
     } catch (error) {
       e = error;
       return KDCore.warning(e);
     }
   };
-  //u19
+  //u23
+  _.miTryGetItemNewCategoryIndex = function(item) {
+    var c, categories, i, j, k, len, len1, type;
+    categories = PKD_MI.Parameters.getNewCategories();
+    if ((item.meta != null) && (item.meta.iCat != null)) {
+      for (i = j = 0, len = categories.length; j < len; i = ++j) {
+        c = categories[i];
+        if (c.type === "note" && c.note === item.meta.iCat) {
+          return i;
+        }
+      }
+    } else {
+      type = "items";
+      if (DataManager.isWeapon(item)) {
+        type = "weapons";
+      } else if (DataManager.isArmor(item)) {
+        type = "armors";
+      }
+      for (i = k = 0, len1 = categories.length; k < len1; i = ++k) {
+        c = categories[i];
+        if (c.type === type) {
+          return i;
+        }
+      }
+      return 0;
+    }
+  };
+  //u22
   _.isHaveFreeSlotInCategory = function(catIndex) {
     var itemsCount;
     if (catIndex == null) {
@@ -5923,11 +10429,17 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     if (catIndex < 0) {
       return true;
     }
-    if (catIndex === 3) {
-      // * Key items allowed always
-      return true;
+    if (!PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+      if (catIndex === 3) {
+        // * Key items allowed always
+        return true;
+      }
     }
-    itemsCount = this.getAllItemsByMICategory(catIndex, true).length;
+    if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+      itemsCount = this.miGetStuffByUserCategory(catIndex).length;
+    } else {
+      itemsCount = this.getAllItemsByMICategory(catIndex, true).length;
+    }
     return $gamePlayer.getMapInventoryUnlockedCount(catIndex) > itemsCount;
   };
   //u19
@@ -5944,10 +10456,66 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     }
     return [];
   };
+  
+  //u22
+  _.miGetStuffByUserCategory = function(catIndex) {
+    var allItems, categories, categoryData, e, equiped;
+    try {
+      categories = PKD_MI.Parameters.getNewCategories();
+      categoryData = categories[catIndex];
+      equiped = PKD_MI.Parameters.get_ShowEquipedItemsInInventory();
+      // * Если предмет имеет пользовательскую категорию, то его не добавляем в стандартные
+      switch (categoryData.type) {
+        case "items":
+          allItems = this.getInventoryNoKeyItems().concat(this.getInventoryKeyItems());
+          allItems = allItems.filter(function(item) {
+            return (item != null) && !item.meta.iCat;
+          });
+          return allItems;
+        case "armors":
+          allItems = this.getInventoryArmors(equiped);
+          allItems = allItems.filter(function(item) {
+            return (item != null) && !item.meta.iCat;
+          });
+          return allItems;
+        case "weapons":
+          allItems = this.getInventoryWeapons(equiped);
+          allItems = allItems.filter(function(item) {
+            return (item != null) && !item.meta.iCat;
+          });
+          return allItems;
+        default:
+          return this.miGetStuffByUserNote(categoryData.note);
+      }
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      return [];
+    }
+  };
+  //u22
+  _.miGetStuffByUserNote = function(note) {
+    var allStuff, e, equiped;
+    try {
+      equiped = PKD_MI.Parameters.get_ShowEquipedItemsInInventory();
+      allStuff = this.getInventoryNoKeyItems().concat(this.getInventoryKeyItems()).concat(this.getInventoryArmors(equiped)).concat(this.getInventoryWeapons(equiped));
+      if (String.any(note)) {
+        allStuff = allStuff.filter(function(item) {
+          return (item != null) && (item.meta.iCat != null) && item.meta.iCat === note;
+        });
+      }
+      return allStuff;
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+      return [];
+    }
+  };
 })();
 
 // ■ END Game_Party.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -5959,24 +10527,36 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
   //@[DEFINES]
   _ = Game_Player.prototype;
   
-  //u20
+  //u20 #u22
   //@[ALIAS]
   ALIAS__moveByInput = _.moveByInput;
   _.moveByInput = function() {
-    var key;
-    key = PKD_MI.Parameters.get_InventoryOpenKey();
-    if (Input.isTriggered(key) || this.miIsGamepadOpenKeyTriggered()) {
-      if (PKD_MI.isInventoryOpened()) {
-        this.onPKDInventoryKey();
-      } else {
-        if (this.canMove()) {
-          this.onPKDInventoryKey();
-        }
-      }
-    }
+    this.miUpdateOpenCloseInventoryKeyPress();
     return ALIAS__moveByInput.call(this);
   };
   
+  //u22
+  _.miUpdateOpenCloseInventoryKeyPress = function() {
+    var key;
+    key = PKD_MI.Parameters.get_InventoryOpenKey();
+    if (Input.isTriggered(key) || this.miIsGamepadOpenKeyTriggered()) {
+      if (PKD_MI.isUserChestIsOpen()) {
+        PKD_MI.openInventory(); // * temp solution
+        return;
+      }
+      if (PKD_MI.isInventoryOpened()) {
+        this.onPKDInventoryKey();
+      } else {
+        if (PKD_MI.isChestIsOpen() || PKD_MI.isUserChestIsOpen()) {
+          this.onPKDInventoryKey();
+        } else {
+          if (this.canMove()) {
+            this.onPKDInventoryKey();
+          }
+        }
+      }
+    }
+  };
   //u20
   _.miIsGamepadOpenKeyTriggered = function() {
     if (PKD_MI.IsGamepad()) {
@@ -6165,8 +10745,12 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
   //u19
   _.getMapInventoryUnlockedCount = function(categoryIndex) {
     var db;
-    db = this.miGetLockSystem();
-    return db[categoryIndex];
+    if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+      return this.miGetLockSystemForNewCats(categoryIndex);
+    } else {
+      db = this.miGetLockSystem();
+      return db[categoryIndex];
+    }
   };
   //u19
   _.miGetLockSystem = function() {
@@ -6177,6 +10761,37 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       values[i] = $gameVariables.value(v);
     }
     return values;
+  };
+  //u23
+  _.miGetLockSystemForNewCats = function(categoryIndex) {
+    var cats, e, selectedCat, type;
+    try {
+      cats = PKD_MI.Parameters.getNewCategories();
+      selectedCat = cats[categoryIndex];
+      if (selectedCat == null) {
+        return 0;
+      } else {
+        type = selectedCat.type;
+        switch (type) {
+          case "items":
+            return $gameVariables.value(PKD_MI.Parameters.getCellLockVariableForItems());
+          case "armors":
+            return $gameVariables.value(PKD_MI.Parameters.getCellLockVariableForArmors());
+          case "weapons":
+            return $gameVariables.value(PKD_MI.Parameters.getCellLockVariableForWeapons());
+          default:
+            if ((selectedCat.unlockedCellsVarId != null) && selectedCat.unlockedCellsVarId > 0) {
+              return $gameVariables.value(selectedCat.unlockedCellsVarId);
+            } else {
+              return 1000;
+            }
+        }
+      }
+    } catch (error) {
+      e = error;
+      console.warn(e);
+      return 0;
+    }
   };
   //?UPD21 (ALL BELOW)
   // ========================== UPDATE 2.1 ===============================
@@ -6238,6 +10853,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 // ■ END Game_Player.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Game_System.coffee
@@ -6265,6 +10881,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
 // ■ END Game_System.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -6302,6 +10919,126 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
 // ■ END Window_Base.coffee
 //---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+//u23
+PKD_MI.LoadExt_ExtendedLoot = function() {
+  (function() {    //╒═════════════════════════════════════════════════════════════════════════╛
+    // ■ PELWindow_LootList.coffee
+    //╒═════════════════════════════════════════════════════════════════════════╛
+    //---------------------------------------------------------------------------
+    var ALIAS__prepareNew, ALIAS__refresh, ALIAS__select, ALIAS__update, _;
+    
+    //@[DEFINES]
+    _ = PELWindow_LootList.prototype;
+    
+    //@[ALIAS]
+    ALIAS__prepareNew = _.prepareNew;
+    _.prepareNew = function() {
+      this.__secondRefreshForcedForLoadIconMI = null;
+      ALIAS__prepareNew.call(this, ...arguments);
+      if (!PKD_MI.Parameters.getIsShowEXTDesc()) {
+        this._miUpdateMIHints = function() {}; // * EMTPY
+      }
+    };
+    //@[ALIAS]
+    ALIAS__select = _.select;
+    _.select = function(index) {
+      ALIAS__select.call(this, ...arguments);
+      this._miHideHint();
+      this.__miShowHintDelay = 10;
+    };
+    //@[ALIAS]
+    ALIAS__refresh = _.refresh;
+    _.refresh = function() {
+      this._miHideHint();
+      ALIAS__refresh.call(this, ...arguments);
+      this._miForceLoadIcons();
+    };
+    _._miForceLoadIcons = function() {
+      if (this.__secondRefreshForcedForLoadIconMI == null) {
+        setTimeout((() => {
+          var e;
+          try {
+            if (!this.isBusy()) {
+              return this.refresh();
+            }
+          } catch (error) {
+            e = error;
+            return KDCore.warning(e);
+          }
+        }), 100);
+        return this.__secondRefreshForcedForLoadIconMI = true;
+      }
+    };
+    //@[ALIAS]
+    ALIAS__update = _.update;
+    _.update = function() {
+      ALIAS__update.call(this, ...arguments);
+      return this._miUpdateMIHints();
+    };
+    _._miUpdateMIHints = function() {
+      var itemCell, selectedItem;
+      if (this.__miShowHintDelay > 0) {
+        this.__miShowHintDelay--;
+      }
+      if (this.isBusy()) {
+        return this._miHideHint();
+      } else {
+        selectedItem = this._miGetSelectedItem();
+        if (selectedItem === this.__miLastSelectedItem) {
+
+        } else {
+          this._miHideHint();
+          if ((selectedItem != null) && this.__miShowHintDelay <= 0) {
+            this.__miLastSelectedItem = selectedItem;
+            //rect = @itemLineRect(@index())
+            itemCell = {
+              x: TouchInput.x,
+              y: TouchInput.y,
+              item: selectedItem,
+              _isChestItem: true,
+              isEnabled: function() {
+                return true;
+              }
+            };
+            PKD_MI.showExternalHelpWindow(itemCell);
+          }
+        }
+      }
+    };
+    _._miHideHint = function() {
+      if (this.__miLastSelectedItem == null) {
+        return;
+      }
+      //"HIDE HINT".p()
+      this.__miLastSelectedItem = null;
+      PKD_MI.closeExternalHelpWindow();
+    };
+    _._miGetSelectedItem = function() {
+      var item;
+      if (this.index() <= 0) { // * -1 and Take All
+        return null;
+      } else {
+        item = this._items[this.index()];
+        if (item != null) {
+          item = item[0];
+          if (PKD_ExtendedLoot.IsGoldItem(item)) {
+            return null; // * NO HINT FOR GOLD
+          } else {
+            return item;
+          }
+        }
+      }
+      return null;
+    };
+  })();
+};
+
+// ■ END PELWindow_LootList.coffee
+//---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -6465,7 +11202,8 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 // ■ END CStoredItems.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -6588,6 +11326,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       }
     }
 
+    //u22
     loadItemsInCategory(catIndex = 0) {
       if (!this.isInventoryActive()) {
         return;
@@ -6600,20 +11339,40 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       this._loadedCatIndex = catIndex;
       this.content.clearAllItems();
       this.content.prepareForCategory(catIndex);
-      switch (catIndex) {
-        case 0:
-          this.showItems();
-          break;
-        case 1:
-          this.showWeapons();
-          break;
-        case 2:
-          this.showArmors();
-          break;
-        case 3:
-          this.showKeys();
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        this.showUserCategoriItems();
+      } else {
+        switch (catIndex) {
+          case 0:
+            this.showItems();
+            break;
+          case 1:
+            this.showWeapons();
+            break;
+          case 2:
+            this.showArmors();
+            break;
+          case 3:
+            this.showKeys();
+        }
       }
       this._onNewCategoryLoaded();
+    }
+
+    //u22
+    showUserCategoriItems() {
+      var e;
+      try {
+        $gameTemp._equipmentWeapCandidates = {};
+        $gameTemp._equipmentArmrCandidates = {};
+        this._loadedItems = $gameParty.miGetStuffByUserCategory(this._loadedCatIndex);
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        this._loadedItems = [];
+      }
+      this._setPages();
+      return this._showItemsGroup(0);
     }
 
     _onNewCategoryWillLoad() {
@@ -6829,6 +11588,10 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
     _onAction(cell) {
       var e;
       try {
+        if ($gameTemp._miInvenotryPickActive === true) {
+          this._onPickItemAction(cell);
+          return;
+        }
         if (PKD_MI.isUserChestIsOpen() || PKD_MI.isStoredChestIsOpen()) {
           return this._onStoreItem(cell);
         } else {
@@ -6840,22 +11603,110 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       }
     }
 
-    _onStoreItem(cell) {
-      if (this._loadedCatIndex === 3) {
-        // * Нельзя квестовые предметы передавать в сундук
-        SoundManager.playBuzzer();
-        return;
+    
+      // * Выбор предмета для события
+    //u22, u23
+    _onPickItemAction(cell) {
+      var e;
+      try {
+        if ($gameTemp._miESM == null) {
+          return this._onPickItemActionForItem(cell.item);
+        } else if ($gameTemp._miESM === 1) {
+          return this._onPickItemActionForWeapon(cell);
+        } else if ($gameTemp._miESM === 2) {
+          return this._onPickItemActionForArmor(cell);
+        }
+      } catch (error) {
+        e = error;
+        return KDCore.warning(e);
       }
-      if (this._loadedCatIndex === 2 || this._loadedCatIndex === 1) {
-        // * Нельзя экиперованные предметы передавать в сундук
-        if (cell.isCanBeUnEquiped()) {
+    }
+
+    //u23
+    _onPickItemActionForItem(item) {
+      var itypeId;
+      itypeId = $gameMessage.itemChoiceItypeId();
+      if ((item != null) && DataManager.isItem(item) && item.itypeId === itypeId) {
+        SoundManager.playCursor();
+        this._onItemPickUpDone(item.id);
+        return PKD_MI.closeInventory();
+      } else {
+        return SoundManager.playBuzzer();
+      }
+    }
+
+    //u23
+    _onPickItemActionForWeapon(cell) {
+      var item;
+      item = cell.item;
+      if ((item != null) && DataManager.isWeapon(item) && !cell._inSpecialState) {
+        SoundManager.playCursor();
+        this._onItemPickUpDone(item.id);
+        return PKD_MI.closeInventory();
+      } else {
+        return SoundManager.playBuzzer();
+      }
+    }
+
+    //u23
+    _onPickItemActionForArmor(cell) {
+      var item;
+      item = cell.item;
+      if ((item != null) && DataManager.isArmor(item) && !cell._inSpecialState) {
+        SoundManager.playCursor();
+        this._onItemPickUpDone(item.id);
+        return PKD_MI.closeInventory();
+      } else {
+        return SoundManager.playBuzzer();
+      }
+    }
+
+    _onItemPickUpDone(itemId) {
+      var ref, varId;
+      varId = $gameMessage.itemChoiceVariableId();
+      if (varId > 0) {
+        $gameVariables.setValue($gameMessage.itemChoiceVariableId(), itemId);
+      }
+      $gameTemp._miInvenotryPickActive = null;
+      if ((ref = $gameTemp._miMsgWinRef) != null) {
+        ref.terminateMessage();
+      }
+      $gameTemp._miMsgWinRef = null;
+      $gameTemp._miESM = null;
+    }
+
+    //u22
+    _onStoreItem(cell) {
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        return this._onStoreItemNewCat(cell);
+      } else {
+        if (this._loadedCatIndex === 3) {
+          // * Нельзя квестовые предметы передавать в сундук
           SoundManager.playBuzzer();
           return;
         }
+        if (this._loadedCatIndex === 2 || this._loadedCatIndex === 1) {
+          // * Нельзя экиперованные предметы передавать в сундук
+          if (cell.isCanBeUnEquiped()) {
+            SoundManager.playBuzzer();
+            return;
+          }
+        }
+        return this._onStoreItemProcess(cell);
       }
-      return this._onStoreItemProcess(cell);
     }
 
+    //u22
+    _onStoreItemNewCat(cell) {
+      // * Нельзя экиперованные предметы передавать в сундук
+      if (cell.isCanBeUnEquiped()) {
+        SoundManager.playBuzzer();
+        return;
+      }
+      this._onStoreItemProcess(cell);
+    }
+
+    //u22
     _onActionItem(cell) {
       if (!cell.isEnabled()) {
         return;
@@ -6863,14 +11714,22 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       if (this.isSomeItemFocused()) {
         return;
       }
-      switch (this._loadedCatIndex) {
-        case 0:
-        case 3: // * ITEMS
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        if (DataManager.isItem(cell.item)) {
           this._onActionOnGameItem(cell);
-          break;
-        case 1:
-        case 2: // * EQUIPMENT
+        } else {
           this._onActionOnEquipItem(cell);
+        }
+      } else {
+        switch (this._loadedCatIndex) {
+          case 0:
+          case 3: // * ITEMS
+            this._onActionOnGameItem(cell);
+            break;
+          case 1:
+          case 2: // * EQUIPMENT
+            this._onActionOnEquipItem(cell);
+        }
       }
     }
 
@@ -6903,6 +11762,8 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       }
     }
 
+    
+      //u23
     _onTitleTick() {
       var cellUnderMouse;
       cellUnderMouse = this.content.getHoveredCell();
@@ -6911,6 +11772,10 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       } else if (cellUnderMouse != null) {
         return this.content.drawItemName("");
       } else {
+        if (($gameTemp.kdButtonUnderMouse != null) && String.any($gameTemp.kdButtonUnderMouse.miExTitle)) {
+          this.content.drawItemName($gameTemp.kdButtonUnderMouse.miExTitle);
+          return;
+        }
         cellUnderMouse = this.invSprite._header.getHoveredIndex();
         if (cellUnderMouse != null) {
           return this.content.drawItemName(this._getCategoryTitle(cellUnderMouse));
@@ -6920,18 +11785,36 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       }
     }
 
+    //u22
     _getCategoryTitle(index) {
-      switch (index) {
-        case 0:
-          return TextManager.item;
-        case 1:
-          return TextManager.weapon;
-        case 2:
-          return TextManager.armor;
-        case 3:
-          return TextManager.keyItem;
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        return this._getCategoryTitleNew(index);
+      } else {
+        switch (index) {
+          case 0:
+            return TextManager.item;
+          case 1:
+            return TextManager.weapon;
+          case 2:
+            return TextManager.armor;
+          case 3:
+            return TextManager.keyItem;
+        }
       }
       return "";
+    }
+
+    //u22
+    _getCategoryTitleNew(index) {
+      var categories, e;
+      try {
+        categories = PKD_MI.Parameters.getNewCategories();
+        return categories[index].name;
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        return "";
+      }
     }
 
     _onGoldTick() {
@@ -7019,11 +11902,9 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       return $gameTemp.__lastInventoryDragPos = [this.invSprite.x, this.invSprite.y];
     }
 
+    //u22
     placeItemToPanel(index) {
       var cellUnderMouse, e;
-      if (this._loadedCatIndex === 1) {
-        return false;
-      }
       cellUnderMouse = this.content.getHoveredCell();
       if (cellUnderMouse == null) {
         return false;
@@ -7031,7 +11912,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       if (!cellUnderMouse.isEnabled()) {
         return false;
       }
-      if (cellUnderMouse.item != null) {
+      if ((cellUnderMouse.item != null) && !DataManager.isWeapon(cellUnderMouse.item)) {
         try {
           $gameParty.leader().setItemOnPanel(cellUnderMouse.item.id, index - 1);
           SoundManager.playEquip();
@@ -7052,11 +11933,9 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       this._loadPage(this._currentPage);
     }
 
+    //u22
     placeWeaponToFavorite(index) {
       var cellUnderMouse, e;
-      if (this._loadedCatIndex === 2) {
-        return false;
-      }
       cellUnderMouse = this.content.getHoveredCell();
       if (cellUnderMouse == null) {
         return false;
@@ -7064,7 +11943,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
       if (!cellUnderMouse.isEnabled()) {
         return false;
       }
-      if (cellUnderMouse.item != null) {
+      if ((cellUnderMouse.item != null) && DataManager.isWeapon(cellUnderMouse.item)) {
         try {
           $gameParty.leader().setFavWeap(cellUnderMouse.item, index);
           SoundManager.playEquip();
@@ -7110,6 +11989,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -7189,7 +12069,8 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 // ■ END MapInvPartySelectCntrl.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 (function() {
   var Parameters;
   Parameters = (function() {
@@ -7354,6 +12235,105 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
         return this.newParser.getParam('chestTakeAllDelay', 5);
       }
 
+      //u22
+      isUseNewCategoriesSystem() {
+        return this.newParser.getParam('isNewCatSys', false);
+      }
+
+      //u22
+      getNewCategoriesButtonImages() {
+        return this.newParser.getParam('newCatSysButtons', {
+          main: "inventoryCategoryBtn_00",
+          hovered: "inventoryCategoryBtn_01",
+          selected: "inventoryCategoryBtn_03"
+        });
+      }
+
+      //u22
+      getNewCategories() {
+        return this.newParser.getParam('newCatSysItems', [
+          {
+            name: "Items",
+            type: "items", //items, weapons, armors, note
+            note: "", //any <iCat:CATEGORY>
+            icon: "inventoryCategory_iconItems", //icon from img/pMapInventory
+            iconMargins: {
+              x: 0,
+              y: 0
+            },
+            position: {
+              x: 83,
+              y: 17
+            }
+          },
+          {
+            name: "Weapons",
+            type: "weapons", //items, weapons, armors, note
+            note: "", //any <iCat:CATEGORY>
+            icon: "inventoryCategory_iconWeapons", //icon from img/pMapInventory
+            iconMargins: {
+              x: 0,
+              y: 0
+            },
+            position: {
+              x: 109,
+              y: 17
+            }
+          },
+          {
+            name: "Armors",
+            type: "armors", //items, weapons, armors, note
+            note: "", //any <iCat:CATEGORY>
+            icon: "inventoryCategory_iconArmor", //icon from img/pMapInventory
+            iconMargins: {
+              x: 0,
+              y: 0
+            },
+            position: {
+              x: 135,
+              y: 17
+            }
+          }
+        ]);
+      }
+
+      //u22
+      isNewItemSelectMode() {
+        return this.newParser.getParam('isSelectItemToEvent', true);
+      }
+
+      //u23
+      getForbiddenActorsForPartySelector() {
+        return this.newParser.getParam('partySelectorFilter', []);
+      }
+
+      //u23
+      isStrictUsecaseOnly() {
+        return true; // * Пока всегда TRUE
+      }
+
+      //@newParser.getParam('partySelectorStrictItems', true)
+
+        //u23
+      isUseExtraOptionsMenu() {
+        return this.newParser.getParam('isUseExtraOptionsMenu', false);
+      }
+
+      //u23
+      getExtraOptions() {
+        return this.newParser.getParam('getExtraMIOptions', []);
+      }
+
+      //u23
+      getIsShowOuterItemsDesc() {
+        return this.newParser.getParam('OIHotCellsShowDesc', true);
+      }
+
+      //u23
+      getIsShowEXTDesc() {
+        return this.newParser.getParam('extendedLootListShowDesc', true);
+      }
+
     };
 
     PKD_MI.register(Parameters);
@@ -7436,6 +12416,7 @@ if ((KDCore.Version != null) && KDCore.Version > KDCore._fileVersion) {
 
 PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Scene_Boot.coffee
@@ -7458,6 +12439,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END Scene_Boot.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -7535,6 +12517,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Scene_Map.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Scene_Map.coffee
@@ -7572,212 +12555,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Scene_Map.coffee
 //---------------------------------------------------------------------------
 
-(function(){
 
-    ImageManager.loadPKDMI('background');
-
-    isInMousePosition = function (sprite, dx, dy) {
-        function inRect(point, rect) {
-            var x2, y2;
-            try {
-                x2 = rect.x + rect.width;
-                y2 = rect.y + rect.height;
-                return point.x > rect.x && point.x < x2 && point.y < y2 && point.y > rect.y;
-            } catch (error) {
-                
-            }
-        }
-        if (dx === undefined)
-            dx = 0;
-        if (dy === undefined)
-            dy = 0;
-        var rect, rx, ry;
-        rx = KDCore.SDK.toGlobalCoord(sprite, 'x');
-        ry = KDCore.SDK.toGlobalCoord(sprite, 'y');
-        rect = new Rectangle(rx - dx, ry - dy, sprite.width + (dx * 2), sprite.height + (dy * 2));
-        return inRect(TouchInput, rect);
-    };
-
-    function Sprite_NumberSlider() {
-        this.initialize.apply(this, arguments);
-    }
-
-    Sprite_NumberSlider.prototype = Object.create(Sprite.prototype);
-    Sprite_NumberSlider.prototype.constructor = Sprite_NumberSlider;
-
-    Sprite_NumberSlider.prototype.initialize = function (callback, valueChangeCallback) {
-        Sprite.prototype.initialize.call(this);
-        this.afterLoadCallback = callback;
-        this.valueChangeCallback = valueChangeCallback;
-        this._create();
-    };
-
-    //?[NEW]
-    Sprite_NumberSlider.prototype.update = function () {
-        Sprite.prototype.update.call(this);
-        this.updateSliderMoveByMouse();
-    };
-
-    PKD_MI.register(Sprite_NumberSlider);
-
-    //@[IMPLEMENTATION]
-    (function () {
-
-        //@[DEFINES]
-        var _ = Sprite_NumberSlider.prototype;
-        var __ = null; //@[PRE]
-
-        _.terminate = function() {
-            this.visible = false;
-            if(this.parent)
-                this.parent.removeChild(this);
-            if(KDCore.isMV())
-                this.destroy();
-        };
-
-        //?[NEW]
-        _._create = function () {
-            __ = PKD_MI.getUIMapInventorySettings().itemSliderSettings;
-            this._loadSliderResources();
-            this.bitmap = ImageManager.loadPKDMI('background');
-            if(this.bitmap.isReady()) {
-                this._createAfterLoad();
-            } else
-                this.bitmap.addLoadListener(_._createAfterLoad.bind(this));
-        };
-
-        //?[NEW]
-        _._loadSliderResources = function () {
-            ImageManager.loadPKDMI('background');
-            ImageManager.loadPKDMI('fill');
-            ImageManager.loadPKDMI('slider');
-        };
-
-        //?[NEW]
-        _._createAfterLoad = function () {
-            if (!this.bitmap.width) return;
-            this._ww = this.bitmap.width;
-            //this._createIcon();
-            this._createFill();
-            this._mouseZone = new Sprite(new Bitmap(this.width + 20, this.height + (__.zoneDY * 2)));
-            this._mouseZone.move(-10, -__.zoneDY);
-            this.addChild(this._mouseZone);
-            if(this.afterLoadCallback)
-                this.afterLoadCallback();
-        };
-
-        //?[NEW]
-        _._createFill = function () {
-            var fillBitmap = ImageManager.loadPKDMI('fill');
-            var fillImg = new Sprite(fillBitmap);
-            fillBitmap.addLoadListener(function () {
-                var sliderFill = new Sprite(new Bitmap(fillBitmap.width, fillBitmap.height));
-                this.sliderFill = sliderFill;
-                this.addChild(this.sliderFill);
-                this._createSlider();
-            }.bind(this));
-            this.fillImg = fillImg;
-        };
-
-        //?[NEW]
-        _._createSlider = function () {
-            this.sliderSprite = new Sprite(ImageManager.loadPKDMI('slider'));
-            this.sliderSprite.anchor.x = 0.5;
-            this.sliderSprite.move(__.sliderMarginX, __.sliderMarginY);
-            this.addChild(this.sliderSprite);
-
-            function applyS() {
-                this.setPercent(1);
-            }
-
-            setTimeout(applyS.bind(this), 20);
-            setTimeout(applyS.bind(this), 50);
-            setTimeout(applyS.bind(this), 100);
-        };
-
-        //?[NEW]
-        _.setPercent = function (percent) {
-            try {
-                if (!this.sliderFill)
-                    return;
-                if (!this.fillImg)
-                    return;
-                if (percent === undefined)
-                    percent = 1;
-                if (percent > 1)
-                    percent = 1;
-                var w = this.fillImg.width * percent;
-                this._fillSliderBy(w);
-            } catch (e) {
-                console.warn(e);
-            }
-        };
-
-        //?[NEW]
-        _._fillSliderBy = function (w) {
-            //"fill0".p(w);
-            this.sliderFill.bitmap.clear();
-            this.sliderFill.bitmap.blt(this.fillImg.bitmap, 0, 0, w, this.fillImg.height, 0, 0);
-            this.sliderSprite.move(__.sliderMarginX + w - __.sliderDX, __.sliderMarginY);
-        };
-
-        //?[NEW]
-        _._applyValueSettings = function (w) {
-            var percent = (w / this.fillImg.width);
-            percent = ~~(percent * 100);
-            if (percent < 0)
-                percent = 0;
-            if (percent > 99)
-                percent = 100;
-            //PKD_MI.onSliderValueChanged(percent);
-            this.valueChangeCallback(percent);
-            this.setPercent(percent / 100);
-        };
-
-        _.isInMousePositionAll = function() {
-            return isInMousePosition(this._mouseZone, 0, 0);
-        };
-
-        _.isInMousePositionHandler = function() {
-            return isInMousePosition(this.sliderSprite, 5, 5);
-        };
-
-        //?[NEW]
-        _.updateSliderMoveByMouse = function () {
-            if (!this.sliderSprite)
-                return;
-            if (!this._mouseZone)
-                return;
-            if (this.isInMousePositionHandler()) {
-                this._canMoveSlider = true;
-            }
-            if (!this.isInMousePositionAll()) {
-                this._canMoveSlider = false;
-            } else {
-                if (TouchInput.isTriggered() && this._canMoveSlider == false) {
-                    this._moveSliderByMouse();
-                }
-            }
-
-            if (this._canMoveSlider) {
-                if (TouchInput.isPressed()) {
-                    this._moveSliderByMouse();
-                }
-            }
-        };
-
-        //?[NEW]
-        _._moveSliderByMouse = function () {
-            var localMPX = KDCore.SDK.canvasToLocalX(this, TouchInput.x);
-            if (localMPX <= this.fillImg.width) {
-                this._fillSliderBy(localMPX);
-                this._applyValueSettings(localMPX);
-            }
-        };
-
-    })();
-    // ===============================================================================
-})();
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ SliderController.coffee
@@ -7822,6 +12600,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END SliderController.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -7888,6 +12667,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END Sprite_ColorGauge.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -8001,6 +12781,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 //---------------------------------------------------------------------------
 //@_pulseTimer.update() if @_pulseTimer?
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_ItemExtraInfo.coffee
@@ -8090,6 +12871,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END Sprite_ItemExtraInfo.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -8322,6 +13104,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MapInventoryActorCell.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInvCell.coffee
@@ -8481,11 +13264,16 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       }
     }
 
+    //u22
     refreshSpecialState() {
       if (this.item == null) {
         return;
       }
       this._checkUsableThread = null;
+      if ($gameTemp._miInvenotryPickActive === true) {
+        this._onCheckUsabelOnItemPickToEvent();
+        return;
+      }
       if (DataManager.isItem(this.item)) {
         return this._refreshItemState();
       } else {
@@ -8819,6 +13607,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MapInvCell.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInventoryStatText.coffee
@@ -9004,6 +13793,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END Sprite_MapInventoryStatText.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -9200,7 +13990,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MapInvFooter.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInvHeader.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -9236,12 +14027,23 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       return this.add(icon);
     }
 
+    //u22
     _createContent() {
-      var addedCount, availableCatList, img0, img1, img3;
       this._content = new Sprite();
+      this.categoryBtns = [];
+      if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        this._createCategoriesNew();
+      } else {
+        this._createCategories();
+      }
+      this.add(this._content);
+    }
+
+    //u22
+    _createCategories() {
+      var addedCount, availableCatList, img0, img1, img3;
       availableCatList = this.settings.availableCategories;
       addedCount = 0;
-      this.categoryBtns = [];
       //? this is must be above items! here...
       img0 = ImageManager.loadPKDMI(this.settings.categoryButtonImg);
       img1 = ImageManager.loadPKDMI(this.settings.categoryButtonHoverImg);
@@ -9315,7 +14117,6 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       }
       this._content.move(this.settings.categoryButtonsMarginX, this.settings.categoryButtonsMarginY);
       this._createCategoryIcons();
-      this.add(this._content);
     }
 
     _createCategoryIcons() {
@@ -9382,6 +14183,49 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       return rx >= 0 && ry >= 0 && rx <= this._background.width && ry <= this._background.height;
     }
 
+    //u22
+    _createCategoriesNew() {
+      var c, category, cats, icon, images, img0, img1, img3, index, j, len;
+      cats = PKD_MI.Parameters.getNewCategories();
+      if (cats == null) {
+        return;
+      }
+      if (cats.length === 0) {
+        return;
+      }
+      // * button images
+      images = PKD_MI.Parameters.getNewCategoriesButtonImages();
+      img0 = ImageManager.loadPKDMI(images.main);
+      img1 = ImageManager.loadPKDMI(images.hovered);
+      img3 = ImageManager.loadPKDMI(images.selected);
+// * create categories buttons
+      for (index = j = 0, len = cats.length; j < len; index = ++j) {
+        c = cats[index];
+        category = new KDCore.Button();
+        category.setButtonImages(img0, img1, img0, img3);
+        //category._catItemData = c
+        category._catItemIndex = index;
+        category._catTag = this._currentCategoryTag(); // * inventory category button
+        category.move(c.position);
+        category.addClickHandler((function() {
+          SoundManager.playCursor();
+          return PKD_MI.invShowNewCategory(this._catTag, this._catItemIndex);
+        }).bind(category));
+        this._content.addChild(category);
+        this.categoryBtns.push(category);
+        if (String.any(c.icon)) {
+          icon = PKD_MI.FromImgI(c.icon);
+          category.addChild(icon);
+          icon.move(c.iconMargins);
+        }
+      }
+    }
+
+    //u22
+    _currentCategoryTag() {
+      return "inventory";
+    }
+
   };
   PKD_MI.register(Sprite_MapInvHeader);
 })();
@@ -9389,7 +14233,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MapInvHeader.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInvHelp.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -9571,6 +14416,9 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
         return;
       }
       text = this.cell.item.name;
+      if (String.any(text)) {
+        text = PKD_MI._removeEscapeChars(text);
+      }
       this._textNameSpr.drawTextWithSettings(text);
       if (!PKD_MI.Parameters.isShowItemNameWithQualityColor()) {
         return;
@@ -9678,6 +14526,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
     }
 
     //@_description.drawTextEx text, 0, 0, @settings.descriptionWindow.width + 150
+
+      //u23
     showActionHelp() {
       var item, name, text;
       if ((PKD_MI.isUserChestIsOpen() || PKD_MI.isStoredChestIsOpen()) && this.cell._isChestItem === false) {
@@ -9695,6 +14545,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
         text = "";
         if (DataManager.isItem(item)) {
           text = this.settings.helpUseItemText;
+          text = this._applyStrictUsecase(text, item);
         } else {
           if (this.cell.isCanBeUnEquiped()) {
             text = this.settings.helpUnEquipItemText;
@@ -9707,21 +14558,46 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
           } else {
             if (PKD_MI.isPartyInventoryAllowed()) {
               text = this.settings.helpEquipItemText;
-              if (this.cell.whoCanEquip.length === 1) {
-                name = $gameActors.actor(this.cell.whoCanEquip[0]).name();
-                if (name != null) {
-                  text += " [" + name + "]";
+              if (PKD_MI.getItemOnlyActorIdUsecase(item) > 0) {
+                text = this._applyStrictUsecase(text, item);
+              } else {
+                if (this.cell.whoCanEquip == null) {
+                  this.cell.whoCanEquip = [];
                 }
-              } else if (this.cell.whoCanEquip.length > 1) {
-                text += " [*]";
+                if (this.cell.whoCanEquip.length === 1) {
+                  name = $gameActors.actor(this.cell.whoCanEquip[0]).name();
+                  if (name != null) {
+                    text += " [" + name + "]";
+                  }
+                } else if (this.cell.whoCanEquip.length > 1) {
+                  text += " [*]";
+                }
               }
             } else {
               text = this.settings.helpEquipItemText;
+              text = this._applyStrictUsecase(text, item);
             }
           }
         }
       }
       this._drawActionHelpText(text);
+    }
+
+    _applyStrictUsecase(text, item) {
+      var e, name, ref, usecaseOnlyFor;
+      try {
+        usecaseOnlyFor = PKD_MI.getItemOnlyActorIdUsecase(item);
+        if (usecaseOnlyFor > 0) {
+          name = (ref = $gameActors.actor(usecaseOnlyFor)) != null ? ref.name() : void 0;
+          if (name != null) {
+            text += " [" + name + "]";
+          }
+        }
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+      }
+      return text;
     }
 
     _getwActionHelpTextChestItem() {
@@ -9773,10 +14649,10 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       return PKD_MI.GetColorForQuealityLevel(qualityLevel);
     }
 
-    //u19
-    refreshPlacement() {
+    //u19, u23
+    refreshPlacement(isFromInventory = true) {
       var dx, dy, pos;
-      if (PKD_MI.Parameters.isStaticDescPosition() === true && (PKD_MI.Parameters.getStaticDescPosition() != null)) {
+      if (isFromInventory && PKD_MI.Parameters.isStaticDescPosition() === true && (PKD_MI.Parameters.getStaticDescPosition() != null)) {
         this._setStaticPosition();
       } else {
         pos = this.getSourcePos();
@@ -9847,7 +14723,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MapInvHelp.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MainInvItems.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -9879,7 +14756,10 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
         return;
       }
       this._textSpr.clear();
-      //@_textSpr.bitmap.fillAll KDCore.Color.RED
+      if (String.any(text)) {
+        //@_textSpr.bitmap.fillAll KDCore.Color.RED
+        text = PKD_MI._removeEscapeChars(text);
+      }
       return this._textSpr.drawTextFull(text, this.settings.itemName.position);
     }
 
@@ -9993,7 +14873,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_MainInvItems.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ AA_MInvMainSprite.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10055,10 +14936,14 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       return rx >= 0 && ry >= 0 && rx <= this._background.width && ry <= this._background.height;
     }
 
+    //u23
     createMain() {
       this._createHeader();
       this._createContent();
-      return this._createFooter();
+      this._createFooter();
+      if (PKD_MI.isPro()) {
+        this._createExtraOptions();
+      }
     }
 
     destroyMain() {
@@ -10071,11 +14956,30 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       this._header = null;
       this._content = null;
       this._footer = null;
+      if (PKD_MI.isPro()) {
+        this._destroyExtraOptions();
+      }
     }
 
     playStartSE() {
       return KDCore.Utils.playSE(this.settings.openInventorySE);
     }
+
+    update() {
+      super.update();
+      return this._updateExtraOptions();
+    }
+
+    //?VERSION
+    _createExtraOptions() {} // * EMPTY
+
+    
+      //?VERSION
+    _updateExtraOptions() {} // * EMPTY
+
+    
+      //?VERSION
+    _destroyExtraOptions() {} // * EMPTY
 
   };
   PKD_MI.register(Sprite_MapInvMain);
@@ -10084,7 +14988,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END AA_MInvMainSprite.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ zSprite_MapUserChestMain_PRO.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10117,12 +15022,15 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
       return KDCore.Utils.playSE(this.settings.openChestSE);
     }
 
+    _createExtraOptions() {} // * NOTHING
+
   };
   PKD_MI.register(Sprite_MapUserChestMain);
 })();
 
 // ■ END zSprite_MapUserChestMain_PRO.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10171,6 +15079,7 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 
 // ■ END SpriteThrowOutBox.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10265,7 +15174,8 @@ PKD_MI.Parameters = new PKD_MI.LIBS.Parameters();
 // ■ END Sprite_TilingFrame.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Spriteset_ExtraUI.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10340,6 +15250,10 @@ Spriteset_InvUI = class Spriteset_InvUI extends Sprite {
     return this.openCategory($gameTemp._lastInvCategory);
   };
   _.closeInventory = function() {
+    if ($gameTemp._miInvenotryPickActive === true) {
+      $gameTemp._miESM = null;
+      this.inventory._onItemPickUpDone(0);
+    }
     return this.inventory.close();
   };
   _.isInventoryOpen = function() {
@@ -10352,13 +15266,17 @@ Spriteset_InvUI = class Spriteset_InvUI extends Sprite {
     if (catId == null) {
       catId = 0;
     }
-    catId = this._checkAvailableCategory(catId); //?line
+    catId = this._checkAvailableCategory(catId);
     $gameTemp._lastInvCategory = catId;
     return this.inventory.loadItemsInCategory(catId);
   };
-  //u20
+  //u22
   _._checkAvailableCategory = function(catId) {
     var avail, nextCatId;
+    if (PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+      // * Без проверок если новая система категорий
+      return catId;
+    }
     if (this._availCats == null) {
       avail = PKD_MI.getUIMapInventorySettings().availableCategories;
       if (!this._availCats) {
@@ -10466,9 +15384,9 @@ Spriteset_InvUI = class Spriteset_InvUI extends Sprite {
     if ((this.chest != null) || (this.userChest != null)) {
       this._updateChestClose();
     }
-    return this._updateOuterCells(); //?line
+    this._updateOuterCells(); //?line
+    return this._updateExHelpWindow();
   };
-  
   //?UPDX, PRO
   _._updateOuterCells = function() {}; //*EMPTY
   _.terminate = function() {
@@ -10655,10 +15573,12 @@ Spriteset_InvUI = class Spriteset_InvUI extends Sprite {
 // ■ END Spriteset_ExtraUI.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 PKD_MI.isPro = function() {
   return false;
 };
+
 
 // Generated by CoffeeScript 2.6.1
 var Window_ExtendedTextLine;
@@ -10713,7 +15633,74 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 };
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
+//╒═════════════════════════════════════════════════════════════════════════╛
+// ■ Window_Message.coffee
+//╒═════════════════════════════════════════════════════════════════════════╛
+//---------------------------------------------------------------------------
+(function() {
+  var ALIAS__isAnySubWindowActive, ALIAS__startInput, _;
+  //@[DEFINES]
+  _ = Window_Message.prototype;
+  //@[ALIAS]
+  ALIAS__startInput = _.startInput;
+  _.startInput = function() {
+    if (PKD_MI.Parameters.isNewItemSelectMode() && $gameMessage.isItemChoice()) {
+      // * Специальный флаг, что в режиме выбора предметов
+      $gameTemp._miInvenotryPickActive = true;
+      $gameTemp._miMsgWinRef = this;
+      if (PKD_MI.isInventoryOpened()) {
+        PKD_MI.refreshInventory();
+      } else {
+        PKD_MI.openInventory();
+      }
+      // * Выбираем соответствующую категорию (если не кастомные)
+      if (!PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+        if ($gameMessage.itemChoiceItypeId() === 2) {
+          PKD_MI.invShowCategoryKeyItems();
+        } else {
+          PKD_MI.invShowCategoryItems();
+        }
+      }
+      return true;
+    } else {
+      return ALIAS__startInput.call(this);
+    }
+  };
+  
+  //@[ALIAS]
+  ALIAS__isAnySubWindowActive = _.isAnySubWindowActive;
+  _.isAnySubWindowActive = function() {
+    return ALIAS__isAnySubWindowActive.call(this) || $gameTemp._miInvenotryPickActive === true;
+  };
+})();
+
+// ■ END Window_Message.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
+//╒═════════════════════════════════════════════════════════════════════════╛
+// ■ Window_ShopBuy.coffee
+//╒═════════════════════════════════════════════════════════════════════════╛
+//---------------------------------------------------------------------------
+(function() {
+  var ALIAS__isEnabled, _;
+  //@[DEFINES]
+  _ = Window_ShopBuy.prototype;
+  //@[ALIAS]
+  ALIAS__isEnabled = _.isEnabled;
+  _.isEnabled = function(item) {
+    return ALIAS__isEnabled.call(this, item) && $gameParty.isCanAddNewItem(item);
+  };
+})();
+
+// ■ END Window_ShopBuy.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapChestController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -10800,7 +15787,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     }
 
     //u19
-    loadItemsInCategory(catIndex = 4) {
+    //u22
+    loadItemsInCategory(catIndex = 9999) {
       if (!this.isInventoryActive()) {
         return;
       }
@@ -10809,7 +15797,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       }
       this._hideHelp();
       this._onNewCategoryWillLoad();
-      this._loadedCatIndex = 4; // * 4 - CHEST
+      this._loadedCatIndex = 9999; // * 9999 - CHEST
       this.content.clearAllItems();
       this.showAllChestItems();
       if ($gameTemp.__aaVisualChestLimitCount != null) {
@@ -10895,7 +15883,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     _refreshCategoryButtons() {} // * EMPTY
 
     clickAt(index) {
-      if (this._loadedCatIndex !== 4) {
+      if (this._loadedCatIndex !== 9999) {
         return;
       }
       return this._onChestAction(index + (this._currentPage * this.MAX));
@@ -11107,7 +16095,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     
       //u20
     _onGPRefreshAfterChangeIndex() {
-      return this.loadItemsInCategory(4);
+      return this.loadItemsInCategory(9999);
     }
 
     //u20
@@ -11146,7 +16134,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapChestController.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -11155,7 +16144,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
   var _;
   //@[DEFINES]
   _ = PKD_MI.LIBS.MapInvController.prototype;
-  //?UPD18
+  //?UPD18, u23
   _._updateHelp = function() {
     var haveExtraInfo, hovered;
     if (this._itemDescShowTimer != null) {
@@ -11177,82 +16166,32 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
         this._hideExtraInfo();
       }
     }
-    if (this._itemDescWindow != null) {
-      return this._updateEquipStatShow();
-    }
   };
-  //u20
-  _._updateEquipStatShow = function() {
-    if (TouchInput.wheelY >= 20) {
-      this._itemDescWindow.showItemStats();
-    } else if (TouchInput.wheelY <= -20) {
-      this._itemDescWindow.showItemStats(true);
-    }
-  };
+  //u23
   _._showHelp = function(cell) {
     if (this.__lastHelpItem === cell) {
-
+      return;
     } else {
       this._hideHelp();
       this.__lastHelpItem = cell;
-      return this._createHelpWindow();
+      this.layer._createHelpWindow(cell, true);
     }
   };
-  _._createHelpWindow = function() {
-    this._itemDescWindow = new PKD_MI.LIBS.Sprite_MapInvHelp();
-    this._waitTime = this._itemDescWindow.delay();
-    this._itemDescShowTimer = new KDCore.TimedUpdate(1, this._onShowTimeTick.bind(this));
-    this._itemDescWindow.opacity = 0;
-    this._itemDescWindow.setup(this.__lastHelpItem);
-    this._placeDescription();
-    return this.layer.addChild(this._itemDescWindow);
-  };
-  _._onShowTimeTick = function() {
-    if (this._waitTime > 0) {
-      return this._waitTime--;
-    } else {
-      if (this._itemDescWindow.opacity < 255) {
-        return this._itemDescWindow.opacity += 20;
-      } else {
-        return this._itemDescShowTimer = null;
-      }
-    }
-  };
-  _._placeDescription = function() {
-    var e;
-    try {
-      if (this._itemDescWindow == null) {
-        return;
-      }
-      return this._itemDescWindow.refreshPlacement();
-    } catch (error) {
-      e = error;
-      return PKD_MI.warning(e);
-    }
-  };
+  //u23
   _._hideHelp = function() {
     if (this.__lastHelpItem == null) {
       return;
     }
-    this._itemDescShowTimer = null;
-    this._destroyHelpWindow();
-    return this.__lastHelpItem = null;
-  };
-  _._destroyHelpWindow = function() {
-    this._itemDescShowTimer = null;
-    if (this._itemDescWindow == null) {
-      return;
-    }
-    this.layer.removeChild(this._itemDescWindow);
-    this._itemDescWindow.visible = false;
-    return this._itemDescWindow = null;
+    this.__lastHelpItem = null;
+    this.layer._hideHelp();
   };
 })();
 
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -11283,9 +16222,9 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     }
   };
   //?UPDX
-  //?u20
+  //?u20, u23
   _._onActionOnGameItem = function(cell) {
-    var item;
+    var item, usecaseOnlyFor;
     //TODO: Можно вынести как расширение, а не каждый раз проверять
     if (PKD_MI.IsABSItem(cell.item)) {
       // * ABS предмет (Alpha ABS Z)
@@ -11304,6 +16243,15 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       //indexOnPanel = $gameParty.leader().skillIndexOnUI(cell.item.id, true)
       //$gamePlayer.touchSkillAt(indexOnPanel + 1) if indexOnPanel >= 0
       item = cell.item;
+      usecaseOnlyFor = PKD_MI.getItemOnlyActorIdUsecase(item);
+      if (usecaseOnlyFor > 0) {
+        if (PKD_MI.isHaveActorIdInParty(usecaseOnlyFor)) {
+          this.useInventoryItem($gameActors.actor(usecaseOnlyFor), item);
+        } else {
+          SoundManager.playBuzzer();
+        }
+        return;
+      }
       // * Если нет цели, если использовать в меню или всегда, то выполнять сразу
       if ((item != null) && item.scope === 0 && (item.occasion === 0 || item.occasion === 2)) {
         this.useInventoryItem($gameParty.leader(), cell.item);
@@ -11360,6 +16308,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       return this._equipInventoryItemOnActor(actor, this._tempItemForParty);
     }
   };
+  //u23
   _.useInventoryItem = function(actor, item) {
     var actorIndex, e;
     if (item == null) {
@@ -11371,6 +16320,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
         return;
       }
       SoundManager.playUseItem();
+      $gameParty.setLastItem(item);
       actor.useItem(item);
       this.item = function() {
         return item;
@@ -11401,6 +16351,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -11462,7 +16413,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -11493,14 +16445,24 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     return this._equipFromInv(actor, etype, null);
   };
   
-  //?UPDX
+  //?UPDX, u23
   _.equipInventoryItem = function(cell) {
+    var usecaseOnlyFor;
+    usecaseOnlyFor = PKD_MI.getItemOnlyActorIdUsecase(cell.item);
+    if (usecaseOnlyFor > 0) {
+      if (PKD_MI.isHaveActorIdInParty(usecaseOnlyFor)) {
+        this._equipInventoryItemOnActor($gameActors.actor(usecaseOnlyFor), cell.item);
+      } else {
+        SoundManager.playBuzzer();
+      }
+      return;
+    }
     if (PKD_MI.isPartyInventoryAllowed() && !cell.isHotCell) { //?line
       this._tempItemForParty = cell.item;
       $gameTemp._tempItemForParty = cell.item;
-      return this._onPartySelectItemClick(cell);
+      this._onPartySelectItemClick(cell);
     } else {
-      return this._equipInventoryItemOnActor($gameParty.leader(), cell.item);
+      this._equipInventoryItemOnActor($gameParty.leader(), cell.item);
     }
   };
   _._equipInventoryItemOnActor = function(actor, item) {
@@ -11564,7 +16526,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -11600,8 +16563,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     } else if (KDGamepad.isKey("Y")) {
       this._onGPExtraKey();
     } else if (KDGamepad.isKey("X")) {
-      if (this._itemDescWindow != null) {
-        this._itemDescWindow.showItemStats();
+      if (this.layer._itemDescWindow != null) {
+        this.layer._itemDescWindow.showItemStats();
       }
     } else if (KDGamepad.isKey("Start")) {
       this._onGPChangeFocus();
@@ -11664,22 +16627,40 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       this.showNextPage();
     }
   };
+  
+  //u22
   _._onGPPrevCategory = function() {
     var index;
     this._gpInvIndexY = 0;
     this._gpInvIndexX = 0;
-    if (this._loadedCatIndex <= 0) {
-      index = 3;
+    if (PKD_MI.isNewCatsSys()) {
+      if (this._loadedCatIndex <= 0) {
+        index = PKD_MI.getNewCatgoriesSize() - 1;
+      } else {
+        index = this._loadedCatIndex - 1;
+      }
     } else {
-      index = this._loadedCatIndex - 1;
+      if (this._loadedCatIndex <= 0) {
+        index = 3;
+      } else {
+        index = this._loadedCatIndex - 1;
+      }
     }
     PKD_MI.eUI.openCategory(index);
     return this._onGPKeyIsPressed();
   };
+  //u22
   _._onGPNextCategory = function() {
+    var next;
     this._gpInvIndexY = 0;
     this._gpInvIndexX = 0;
-    PKD_MI.eUI.openCategory(this._loadedCatIndex + 1);
+    next = this._loadedCatIndex + 1;
+    if (PKD_MI.isNewCatsSys()) {
+      if (PKD_MI.getNewCatgoriesSize() >= next) {
+        next = 0;
+      }
+    }
+    PKD_MI.eUI.openCategory(next);
     return this._onGPKeyIsPressed();
   };
   _._onGPKeyIsPressed = function() {
@@ -11863,6 +16844,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvController.coffee
@@ -11984,6 +16966,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapInvController.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapInvPartySelectCntrl.coffee
@@ -12025,7 +17008,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END MapInvPartySelectCntrl.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ MapUserChestController.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12086,6 +17070,25 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
     showKeys() {
       this._loadedItems = [];
+      this._setPages();
+      return this._showItemsGroup(0);
+    }
+
+    //u22
+    //$[OVER]
+    // * Все предметы (нет категорий)
+    showUserCategoriItems() {
+      var allItems, e;
+      try {
+        allItems = $gamePlayer.aaGetPlayerChestStoredItems();
+        this._loadedItems = allItems.getOnlyItems();
+        this._loadedItems = this._loadedItems.concat(allItems.getOnlyWeapons());
+        this._loadedItems = this._loadedItems.concat(allItems.getOnlyArmors());
+      } catch (error) {
+        e = error;
+        KDCore.warning(e);
+        this._loadedItems = [];
+      }
       this._setPages();
       return this._showItemsGroup(0);
     }
@@ -12241,10 +17244,18 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       var index;
       this._gpInvIndexY = 0;
       this._gpInvIndexX = 0;
-      if (this._loadedCatIndex <= 0) {
-        index = 2;
+      if (PKD_MI.isNewCatsSys()) {
+        if (this._loadedCatIndex <= 0) {
+          index = PKD_MI.getNewCatgoriesSize() - 1;
+        } else {
+          index = this._loadedCatIndex - 1;
+        }
       } else {
-        index = this._loadedCatIndex - 1;
+        if (this._loadedCatIndex <= 0) {
+          index = 2;
+        } else {
+          index = this._loadedCatIndex - 1;
+        }
       }
       PKD_MI.eUI.openUserChestCategory(index);
       return this._onGPKeyIsPressed();
@@ -12254,9 +17265,16 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       var nextValue;
       this._gpInvIndexY = 0;
       this._gpInvIndexX = 0;
-      nextValue = this._loadedCatIndex + 1;
-      if (nextValue > 2) {
-        nextValue = 0;
+      if (PKD_MI.isNewCatsSys()) {
+        nextValue = this._loadedCatIndex + 1;
+        if (PKD_MI.getNewCatgoriesSize() >= nextValue) {
+          nextValue = 0;
+        }
+      } else {
+        nextValue = this._loadedCatIndex + 1;
+        if (nextValue > 2) {
+          nextValue = 0;
+        }
       }
       PKD_MI.eUI.openUserChestCategory(nextValue);
       return this._onGPKeyIsPressed();
@@ -12303,6 +17321,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END MapUserChestController.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12367,6 +17386,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END Sprite_MapChestFooter.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12445,7 +17465,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapChestHeader.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ zSprite_MapChestMain_PRO.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12478,6 +17499,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       return this._main.addChild(this._footer);
     }
 
+    _createExtraOptions() {} // * NOTHING
+
     playStartSE() {
       return KDCore.Utils.playSE(this.settings.openChestSE);
     }
@@ -12488,6 +17511,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END zSprite_MapChestMain_PRO.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12549,7 +17573,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapInventoryActorCell.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInvCell.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12587,7 +17612,20 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
   };
   //?UPDX
   _._onCheckUsableTick = function() {
-    var canUse, e, i, itemUsable, j, k, len, ref, usable;
+    var canUse, e, i, itemUsable, j, k, len, ref, usable, usecaseOnlyFor;
+    if ($gameTemp._miInvenotryPickActive === true) {
+      this._onCheckUsabelOnItemPickToEvent();
+      return;
+    }
+    
+    // * Если "строгий" выбор персонажа под вещь, то нельзя вообще использовать если персонажа нет в группе
+    if (PKD_MI.Parameters.isStrictUsecaseOnly()) {
+      usecaseOnlyFor = PKD_MI.getItemOnlyActorIdUsecase(this.item);
+      if (usecaseOnlyFor > 0 && !PKD_MI.isHaveActorIdInParty(usecaseOnlyFor)) {
+        this.disableItem();
+        return;
+      }
+    }
     if (PKD_MI.IsABSItem(this.item)) {
       if (AA.isABSActive()) {
         //TODO: Это может влиять на производительность
@@ -12643,6 +17681,29 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       return this.disableItem();
     }
   };
+  _._onCheckUsabelOnItemPickToEvent = function() {
+    var itypeId;
+    if ($gameTemp._miESM == null) {
+      itypeId = $gameMessage.itemChoiceItypeId();
+      if ((this.item != null) && DataManager.isItem(this.item) && this.item.itypeId === itypeId) {
+        this.enableItem();
+      } else {
+        this.disableItem();
+      }
+    } else if ($gameTemp._miESM === 1) {
+      if ((this.item != null) && DataManager.isWeapon(this.item) && !this._inSpecialState) {
+        this.enableItem();
+      } else {
+        this.disableItem();
+      }
+    } else if ($gameTemp._miESM === 2) {
+      if ((this.item != null) && DataManager.isArmor(this.item) && !this._inSpecialState) {
+        this.enableItem();
+      } else {
+        this.disableItem();
+      }
+    }
+  };
   _._canActorUseItem = function(actor) {
     var _S, actorIndex, item, result;
     _S = Scene_Item.prototype; //?line
@@ -12675,6 +17736,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END Sprite_MapInvCell.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12772,7 +17834,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapInvCell.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ PKD_MI_LIBS.Sprite_MapInvCell.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -12782,14 +17845,17 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
   //@[DEFINES]
   _ = PKD_MI.LIBS.Sprite_MapInvCell.prototype;
   //u19
+  //u22
   _.prepareForCategory = function(categoryIndex) {
     this.categoryIndex = categoryIndex;
     this._lockCellSpr.visible = false;
     this._iconSprPlace.visible = true;
     // * KEY ITEMS CAN'T BE LOCKED
     //console.log(@categoryIndex)
-    if (this.categoryIndex === 3) {
-      return;
+    if (!PKD_MI.Parameters.isUseNewCategoriesSystem()) {
+      if (this.categoryIndex === 3) {
+        return;
+      }
     }
     if (this.categoryIndex < 0) {
       return;
@@ -12800,7 +17866,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     if (!PKD_MI.Parameters.isCellLockSystemAllowed()) {
       return;
     }
-    if (this.categoryIndex !== 4) {
+    if (this.categoryIndex !== 9999) {
       this._checkLockedState();
     } else {
       this._checkLockedStateForChest();
@@ -12836,6 +17902,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END PKD_MI_LIBS.Sprite_MapInvCell.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -13229,6 +18296,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapInvHelp.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapInvHelp.coffee
@@ -13362,6 +18430,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 
 // ■ END Sprite_MapInvHelp.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -13518,6 +18587,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapInventoryHotItemCell.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MainInvItems.coffee
@@ -13623,6 +18693,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MainInvItems.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MainInvItems.coffee
@@ -13726,7 +18797,125 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MainInvItems.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
+//╒═════════════════════════════════════════════════════════════════════════╛
+// ■ Sprite_MapInvMain.coffee
+//╒═════════════════════════════════════════════════════════════════════════╛
+//---------------------------------------------------------------------------
+(function() {
+  var _;
+  // * ТОЛЬКО ДЛЯ ИНВЕНТАРЯ (не сундук и не хранилище)
+
+  //@[DEFINES]
+  _ = PKD_MI.LIBS.Sprite_MapInvMain.prototype;
+  _._createExtraOptions = function() {
+    var e, i, len, option, options;
+    try {
+      if (!PKD_MI.Parameters.isUseExtraOptionsMenu()) {
+        return;
+      }
+      options = PKD_MI.Parameters.getExtraOptions();
+      if (options.length === 0) {
+        return;
+      }
+      this._exOptions = [];
+      for (i = 0, len = options.length; i < len; i++) {
+        option = options[i];
+        this._createExtraOption(option);
+      }
+      if (this._exOptions.length > 0) {
+        this._updateExtraOptions = this._updateExtraOptionsMain;
+        return this._createExtraOptionsEnableCheckThread();
+      } else {
+        return this._exOptions = null;
+      }
+    } catch (error) {
+      e = error;
+      return KDCore.warning(e);
+    }
+  };
+  _._createExtraOption = function(option) {
+    var button, commonEventId, e;
+    try {
+      if (option == null) {
+        return;
+      }
+      button = new KDCore.ButtonMU(option.images, true, 'pMapInventory');
+      this._exOptions.push(button);
+      this.addChild(button);
+      // * Confgurate
+      commonEventId = option.commonEvent;
+      if (commonEventId > 0 && ($dataCommonEvents[commonEventId] != null)) {
+        button.addClickHandler(function() {
+          return $gameTemp.reserveCommonEvent(commonEventId);
+        });
+      }
+      button.miExEnableCondition = option.isEnabled;
+      button.move(option.margins);
+      return button.miExTitle = option.title;
+    } catch (error) {
+      e = error;
+      return KDCore.warning(e);
+    }
+  };
+  _._createExtraOptionsEnableCheckThread = function() {
+    this.exOpThread = new KDCore.TimedUpdate(10, this._extraOptionEnableCheck.bind(this));
+  };
+  _._extraOptionEnableCheck = function() {
+    var b, e, enableCondition, i, len, ref, results;
+    try {
+      ref = this._exOptions;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        b = ref[i];
+        enableCondition = b.miExEnableCondition;
+        if (!String.any(enableCondition)) {
+          continue;
+        }
+        results.push(b.refreshState(eval(b.miExEnableCondition) === true));
+      }
+      return results;
+    } catch (error) {
+      e = error;
+      return KDCore.warning(e);
+    }
+  };
+  _._updateExtraOptions = function() {}; // * DUMMY
+  _._updateExtraOptionsMain = function() {
+    return this.exOpThread.update();
+  };
+  _._destroyExtraOptions = function() {
+    var b, e, i, len, ref;
+    if (this._exOptions == null) {
+      return;
+    }
+    try {
+      ref = this._exOptions;
+      for (i = 0, len = ref.length; i < len; i++) {
+        b = ref[i];
+        this.removeChild(b);
+        b.visible = false;
+        // * На всякий случай
+        if ($gameTemp.kdButtonUnderMouse === b) {
+          $gameTemp.kdButtonUnderMouse = null;
+        }
+      }
+      this._exOptions = null;
+      this.exOpThread = null;
+      this._updateExtraOptions = function() {}; // * EMPTY
+    } catch (error) {
+      e = error;
+      KDCore.warning(e);
+    }
+  };
+})();
+
+// ■ END Sprite_MapInvMain.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Sprite_MapUserChestHeader.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -13791,6 +18980,16 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       }
     }
 
+    //u22
+    //$[OVER]
+    _currentCategoryTag() {
+      return "userChest";
+    }
+
+    //u22
+    //$[OVER]
+    _createCategoriesNew() {} // * NOTHING
+
   };
   PKD_MI.register(Sprite_MapUserChestHeader);
 })();
@@ -13798,7 +18997,82 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Sprite_MapUserChestHeader.coffee
 //---------------------------------------------------------------------------
 
-// Generated by CoffeeScript 2.5.1
+
+// Generated by CoffeeScript 2.6.1
+//╒═════════════════════════════════════════════════════════════════════════╛
+// ■ Spriteset_InvUI.coffee
+//╒═════════════════════════════════════════════════════════════════════════╛
+//---------------------------------------------------------------------------
+(function() {
+  var _;
+  //u23 ALL
+
+  //@[DEFINES]
+  _ = Spriteset_InvUI.prototype;
+  //?DYNAMIC
+  _._updateExHelpWindow = function() {}; // * EMPTY
+  _._updateExHelpWindowMain = function() {
+    var ref;
+    if ((ref = this._itemDescShowTimer) != null) {
+      ref.update();
+    }
+    this._updateEquipStatShow();
+  };
+  _._createHelpWindow = function(cell, isFromInventory = true) {
+    this._itemDescWindow = new PKD_MI.LIBS.Sprite_MapInvHelp();
+    this._waitTime = this._itemDescWindow.delay();
+    this._itemDescShowTimer = new KDCore.TimedUpdate(1, this._onShowTimeTick.bind(this));
+    this._updateExHelpWindow = this._updateExHelpWindowMain;
+    this._itemDescWindow.opacity = 0;
+    this._itemDescWindow.setup(cell);
+    this._itemDescWindow.refreshPlacement(isFromInventory);
+    SceneManager._scene.addChild(this._itemDescWindow);
+  };
+  _._onShowTimeTick = function() {
+    if (this._waitTime > 0) {
+      return this._waitTime--;
+    } else {
+      if (this._itemDescWindow.opacity < 255) {
+        return this._itemDescWindow.opacity += 25;
+      } else {
+        return this._itemDescShowTimer = null;
+      }
+    }
+  };
+  _._hideHelp = function() {
+    if (this._itemDescWindow == null) {
+      return;
+    }
+    this._destroyHelpWindow();
+  };
+  _._destroyHelpWindow = function() {
+    var parent;
+    this._itemDescShowTimer = null;
+    if (this._itemDescWindow == null) {
+      return;
+    }
+    parent = this._itemDescWindow.parent;
+    if (parent != null) {
+      parent.removeChild(this._itemDescWindow);
+    }
+    this._itemDescWindow.visible = false;
+    this._itemDescWindow = null;
+    return this._updateExHelpWindow = function() {}; // * EMPTY
+  };
+  _._updateEquipStatShow = function() {
+    if (TouchInput.wheelY >= 20) {
+      this._itemDescWindow.showItemStats();
+    } else if (TouchInput.wheelY <= -20) {
+      this._itemDescWindow.showItemStats(true);
+    }
+  };
+})();
+
+// ■ END Spriteset_InvUI.coffee
+//---------------------------------------------------------------------------
+
+
+// Generated by CoffeeScript 2.6.1
 //╒═════════════════════════════════════════════════════════════════════════╛
 // ■ Spriteset_InvUI.coffee
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -13853,18 +19127,19 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
   
   // * ============================== UPDATE 1.6 ============================================
 
-  //?UPDX
+  //?UPDX, u23
   _._createOUTItems = function() {
-    var c, cells, i, j, len, results;
+    var c, cells, i, j, len;
     cells = PKD_MI.Parameters.getHotCells();
     this.uiExtraCells = [];
 // * Индекс нужен чтобы Click обрабатывать
-    results = [];
     for (i = j = 0, len = cells.length; j < len; i = ++j) {
       c = cells[i];
-      results.push(this.uiExtraCells.push(this._createAndAddOUTItemToUI(c, i)));
+      this.uiExtraCells.push(this._createAndAddOUTItemToUI(c, i));
     }
-    return results;
+    if (!PKD_MI.Parameters.getIsShowOuterItemsDesc()) {
+      this._updateOuterHoverHelp = function() {}; // * EMTPY
+    }
   };
   //?UPDX
   _._createAndAddOUTItemToUI = function(cellData, index) {
@@ -13882,7 +19157,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
     this.addChild(cell);
     return cell;
   };
-  //?UPDX
+  //?UPDX, u23
   _.startMoveCellItem = function(item) {
     var extraImg, iconSize;
     this._dragItem = item;
@@ -13899,7 +19174,8 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       this._movingItemSprite.bitmap.drawIcon(0, 0, item.iconIndex, iconSize);
     }
     this.addChild(this._movingItemSprite);
-    return this._showThrowOutBox(); //TO
+    this._showThrowOutBox(); //TO
+    this._resetOuterItemHoverHelp();
   };
   
   //?UPDX
@@ -13908,6 +19184,7 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       this._updateDrag();
     } else {
       this._updateOuterHotKeys();
+      this._updateOuterHoverHelp();
     }
   };
   //?UPDX
@@ -13994,10 +19271,48 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
       return (ref = this.inventory) != null ? ref.onHotCellItemAction(cell) : void 0;
     }
   };
+  //u23
+  _._updateOuterHoverHelp = function() {
+    var cell, e;
+    if (this.isAnyOuterCellUnderMouse()) {
+      cell = this.uiExtraCells.find(function(c) {
+        return c.isHovered() && (c.item != null);
+      });
+      if (this.__hoveredOuterCell === cell) {
+        return;
+      } else {
+        this._hideHelp();
+        if (cell != null) {
+          try {
+            this._createHelpWindow(cell, true);
+            this.__hoveredOuterCell = cell;
+          } catch (error) {
+            e = error;
+            KDCore.warning(e);
+            this._resetOuterItemHoverHelp();
+          }
+        } else {
+          if (this.__hoveredOuterCell != null) {
+            this._resetOuterItemHoverHelp();
+          }
+        }
+      }
+    } else {
+      this._resetOuterItemHoverHelp();
+    }
+  };
+  //u23
+  _._resetOuterItemHoverHelp = function() {
+    if (this.__hoveredOuterCell != null) {
+      this.__hoveredOuterCell = null;
+      return this._hideHelp();
+    }
+  };
 })();
 
 // ■ END Spriteset_InvUI.coffee
 //---------------------------------------------------------------------------
+
 
 // Generated by CoffeeScript 2.5.1
 //╒═════════════════════════════════════════════════════════════════════════╛
@@ -14060,9 +19375,10 @@ Window_ExtendedTextLine = class Window_ExtendedTextLine extends Window_Base {
 // ■ END Spriteset_InvUI.coffee
 //---------------------------------------------------------------------------
 
+
 // Generated by CoffeeScript 2.5.1
 PKD_MI.isPro = function() {
   return true;
 };
 
-//Plugin PKD_MapInventory automatic build by PKD PluginBuilder 1.9.2 09.12.2021
+//Plugin PKD_MapInventory builded by PKD PluginBuilder 2.1 - 26.06.2022
