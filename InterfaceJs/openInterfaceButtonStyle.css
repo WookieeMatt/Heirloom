@@ -1,0 +1,23 @@
+/* MODIFY 'OPEN INTERFACE' BUTTON (in game button) */
+.openInterfaceButton {
+    position: absolute;
+    border: 2px solid #ededed;
+    border-radius: 0px;
+    z-index: 999;
+    padding: 5px 15px;
+    font-size: 20px;
+    background-color: #1c4167;
+    color: #ededed;
+}
+
+/* MODIFY COLORS DURING MOUSE HOVER */
+.openInterfaceButton:hover {
+    color: #1c4167;
+    background-color: #ededed;
+    border-color: #1c4167;
+}
+
+/* MODIFY COLORS DURING MOUSE CLICK */
+/*.openInterfaceButton:active {
+
+}*/

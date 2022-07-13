@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" type="text/css" href="./InterfaceJs/style.css">
+        <title>
+            Action Sequence Interface - V1.1.3 - FULL VERSION
+        </title>
+    </head>
+    <body>
+        <div id="wrapper">
+            <div style="position: fixed; top: 0; left:0; color: #ededed">FULL VERSION V1.1.3</div>
+            <div id="focusSelectCommonEvent"></div>
+            <div class="managementRow" id="Management"></div>
+            <div class="mainContainer">
+                <table class="main">
+                    <tbody>
+                        <tr class="mainRow">
+                            <td class="commandsCol">
+                                <div id="Commands">
+                                    <h1>==SETTINGS==</h1>
+                                    <button onclick="CreateBlock('AcsetSetup')">ACSET: Setup</button>
+                                    <button onclick="CreateBlock('AcsetFinish')">ACSET: Finish</button>
+                                    <h1>==MOVEMENT==</h1>
+                                    <button onclick="CreateBlock('MoveToTarget')">Move To Target</button>
+                                    <button onclick="CreateBlock('MoveToPoint')">Move To Point</button>
+                                    <button onclick="CreateBlock('MoveDistance')">Move Distance</button>
+                                    <button onclick="CreateBlock('Jump')">Jump</button>
+                                    <button onclick="CreateBlock('SpinRotate')">Spin/Rotate</button>
+                                    <button onclick="CreateBlock('Float')">Float</button>
+                                    <h1>==ANIMATION==</h1>
+                                    <button onclick="CreateBlock('ShowAnimation')">Show Animation</button>
+                                    <button onclick="CreateBlock('ActionAnimation')">Action Animation</button>
+                                    <button onclick="CreateBlock('ProjectileAnimation')">Projectile: Animation</button>
+                                    <button onclick="CreateBlock('ProjectileIcon')">Projectile: Icon</button>
+                                    <button onclick="CreateBlock('ProjectilePicture')">Projectile: Picture</button>
+                                    <h1>==MECH==</h1>
+                                    <button onclick="CreateBlock('ActionEffect')">Action Effect</button>
+                                    <button onclick="CreateBlock('OnceParallel')">Once Parallel</button>
+                                    <h1>==SCREEN EFFECTS==</h1>
+                                    <button onclick="CreateBlock('ShakeScreen')">Shake Screen</button>
+                                    <button onclick="CreateBlock('FlashScreen')">Flash Screen</button>
+                                    <button onclick="CreateBlock('Zoom')">Zoom</button>
+                                    <button onclick="CreateBlock('CameraFocusTarget')">Camera Focus Target</button>
+                                    <button onclick="CreateBlock('CameraFocusPoint')">Camera Focus Point</button>
+                                    <button onclick="CreateBlock('ColorBreak')">Color Break</button>
+                                    <button onclick="CreateBlock('ShockwaveEachTarget')">Shockwave: Each Target</button>
+                                    <h1>==CHARACTER==</h1>
+                                    <button onclick="CreateBlock('DBAnimation')">DB Animation</button>
+                                    <button onclick="CreateBlock('MotionType')">Motion Type</button>
+                                    <button onclick="CreateBlock('FaceDirection')">Face Direction</button>
+                                    <button onclick="CreateBlock('Opacity')">Opacity</button>
+                                    <button onclick="CreateBlock('Scale')">Scale</button>
+                                    <button onclick="CreateBlock('Skew')">Skew</button>
+                                    <button onclick="CreateBlock('MotionTrailCreate')">Motion Trail: Create</button>
+                                    <button onclick="CreateBlock('MotionTrailRemove')">Motion Trail: Remove</button>
+                                    <button onclick="CreateBlock('FreezeFrame')">Freeze Frame</button>
+                                    <h1>==OTHER==</h1>
+                                    <button onclick="CreateBlock('Wait')">Wait</button>
+                                    <button onclick="CreateBlock('CommonEvent')">Common Event</button>
+                                    <!-- Add some spaces to prevent last buttons from disappearing -->
+                                    <br><br><br><br><br>
+                                </div>
+                            </td>
+                            <td class="nodesCol" id="NodesCanvasContainer"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+
+            <div id="CommandOptions" class="CommandOptions">
+                <div id="CommandOptionsHeader">
+                  SELECTED BLOCK PARAMETERS<button onclick='this.classList.toggle("CommandsExpandButtonToggle");document.getElementById("CommandOptions_Content").classList.toggle("hidden");' class='CommandsExpandButton'>[+]</button>
+                  <hr>
+                </div>
+                <div id="CommandOptions_Content">
+                  <div id="Div_TargetSelect"  name="OptionDiv">
+                    Targets:<select id="Command_TargetSelect_DropList">
+                      <option value="null">----------------</option>
+                      <option value="user">User</option>
+                      <option value="current target">Current Target</option>
+                      <option value="prev target">Previous Target</option>
+                      <option value="next target">Next Target</option>
+                      <option value="all targets">All Targets</option>
+                      <option value="focus">Focus</option>
+                      <option value="not focus">Not Focus</option>
+                      <option value="">----------------</option>
+                      <option value="alive friends">Alive Friends</option>
+                      <option value="alive friends not user">Alive Friends Not User</option>
+                      <option value="alive friends not target">Alives Friends Not Target</option>
+                      <option value="dead friends">Dead Friends</option>
+                      <option value="friend index x">Friend Index x</option>
+                      <option value="">----------------</option>
+                      <option value="alive opponents">Alive Opponents</option>
+                      <option value="alive opponents not target">Alive Opponents Not Target</option>
+                      <option value="dead opponents">Dead Opponents</option>
+                      <option value="opponent index x">Opponent Index x</option>
+                      <option value="">----------------</option>
+                      <option value="alive actors">Alive Actors</option>
+                      <option value="alive actors not user">Alive Actors Not User</option>
+                      <option value="alive actors not target">Alive Actors Not Target</option>
+                      <option value="dead actors">Dead Actors</option>
+                      <option value="actor index x">Actor Index x</option>
+                      <option value="actor ID x">Actor ID x</option>
+                      <option value="">----------------</option>
+                      <option value="alive enemies">Alive Enemies</option>
+                      <option value="alive enemies not user">Alive Enemies Not User</option>
+                      <option value="alive enemies not target">Alive Enemies Not Target</option>
+                      <option value="dead enemies">Dead Enemies</option>
+                      <option value="enemy index x">Enemy Index x</option>
+                      <option value="enemy ID x">Enemy ID x</option>
+                      <option value="">----------------</option>
+                      <option value="alive battlers">Alive Battlers</option>
+                      <option value="alive battlers not user">Alive Battlers Not User</option>
+                      <option value="alive battlers not target">Alive Battlers Not Target</option>
+                      <option value="dead battlers">Dead Battlers</option>
+                    </select><span id="Command_TargetSelect_InputText" class="textarea" contenteditable></span>
+                  </div>
+            
+                  <div id="Div_TargetSelectDestination" name="OptionDiv">
+                    Targets(Destination):<select id="Command_TargetSelectDestination_DropList">
+                      <option value="null">----------------</option>
+                      <option value="user">User</option>
+                      <option value="current target">Current Target</option>
+                      <option value="prev target">Previous Target</option>
+                      <option value="next target">Next Target</option>
+                      <option value="all targets">All Targets</option>
+                      <option value="focus">Focus</option>
+                      <option value="not focus">Not Focus</option>
+                      <option value="">----------------</option>
+                      <option value="alive friends">Alive Friends</option>
+                      <option value="alive friends not user">Alive Friends Not User</option>
+                      <option value="alive friends not target">Alives Friends Not Target</option>
+                      <option value="dead friends">Dead Friends</option>
+                      <option value="friend index x">Friend Index x</option>
+                      <option value="">----------------</option>
+                      <option value="alive opponents">Alive Opponents</option>
+                      <option value="alive opponents not target">Alive Opponents Not Target</option>
+                      <option value="dead opponents">Dead Opponents</option>
+                      <option value="opponent index x">Opponent Index x</option>
+                      <option value="">----------------</option>
+                      <option value="alive actors">Alive Actors</option>
+                      <option value="alive actors not user">Alive Actors Not User</option>
+                      <option value="alive actors not target">Alive Actors Not Target</option>
+                      <option value="dead actors">Dead Actors</option>
+                      <option value="actor index x">Actor Index x</option>
+                      <option value="actor ID x">Actor ID x</option>
+                      <option value="">----------------</option>
+                      <option value="alive enemies">Alive Enemies</option>
+                      <option value="alive enemies not user">Alive Enemies Not User</option>
+                      <option value="alive enemies not target">Alive Enemies Not Target</option>
+                      <option value="dead enemies">Dead Enemies</option>
+                      <option value="enemy index x">Enemy Index x</option>
+                      <option value="enemy ID x">Enemy ID x</option>
+                      <option value="">----------------</option>
+                      <option value="alive battlers">Alive Battlers</option>
+                      <option value="alive battlers not user">Alive Battlers Not User</option>
+                      <option value="alive battlers not target">Alive Battlers Not Target</option>
+                      <option value="dead battlers">Dead Battlers</option>
+                    </select><span id="Command_TargetSelectDestination_InputText" class="textarea" contenteditable></span>
+                    <div>
+                      Target Location:
+                      <select id="Command_TargetLocation_Select">
+                        <option>front head</option>
+                        <option>front center</option>
+                        <option>front base</option>
+                        <option>middle head</option>
+                        <option>middle center</option>
+                        <option>middle base</option>
+                        <option>back head</option>
+                        <option>back center</option>
+                        <option>back base</option>
+                      </select>
+                    </div>
+                    <div>
+                      Melee Distance:<input type="text" id="Command_TargetLocation_MeleeDistance">
+                    </div>
+                    <div>
+                      Offset Adjustment:
+                      <select id="Command_OffsetAdjustment_Select">
+                        <option value="none">Normal - No adjustments made</option>
+                        <option value="horz">Horizontal - Actors adjust left, Enemies adjust right</option>
+                        <option value="vert">Vertical - Actors adjust Up, Enemies adjust down</option>
+                        <option value="horz + vert">Both - Applies both Horizontal and Vertical</option>
+                      </select>
+                    </div>
+                    <div>
+                      Offset: X<input type="text" id="Command_OffsetAdjustment_OffsetX"><br>
+                      Offset: Y<input type="text" id="Command_OffsetAdjustment_OffsetY">
+                    </div>
+                  </div>
+            
+                  <div id="Div_Duration" name="OptionDiv">
+                    Duration:<input type="text" id="Command_Duration">
+                  </div>
+            
+                  <div id="Div_FaceDestination" name="OptionDiv">
+                    Face Destination?<input type="radio" name="facedestination" value="true">Yes<input type="radio" name="facedestination" value="false">No
+                  </div>
+            
+                  <div id="Div_MovementEasing" name="OptionDiv">
+                    Movement Easing:
+                    <select id="Command_MovementEasing_Select">
+                      <option>Linear</option>
+                      <option>InSine</option>
+                      <option>OutSine</option>
+                      <option>InOutSine</option>
+                      <option>InQuad</option>
+                      <option>OutQuad</option>
+                      <option>InOutQuad</option>
+                      <option>InCubic</option>
+                      <option>OutCubic</option>
+                      <option>InOutCubic</option>
+                      <option>InQuart</option>
+                      <option>OutQuart</option>
+                      <option>InOutQuart</option>
+                      <option>InQuint</option>
+                      <option>OutQuint</option>
+                      <option>InOutQuint</option>
+                      <option>InExpo</option>
+                      <option>OutExpo</option>
+                      <option>InOutExpo</option>
+                      <option>InCirc</option>
+                      <option>OutCirc</option>
+                      <option>InOutCirc</option>
+                      <option>InBack</option>
+                      <option>OutBack</option>
+                      <option>InOutBack</option>
+                      <option>InElastic</option>
+                      <option>OutElastic</option>
+                      <option>InOutElastic</option>
+                      <option>InBounce</option>
+                      <option>OutBounce</option>
+                      <option>InOutBounce</option>
+                    </select>
+                  </div>
+            
+                  <div id="Div_MovementMotion" name="OptionDiv">
+                    Movement Motion:
+                    <select id="Command_MovementMotion_Select">
+                      <option>walk</option>
+                      <option>wait</option>
+                      <option>chant</option>
+                      <option>guard</option>
+                      <option>damage</option>
+                      <option>evade</option>
+                      <option>thrust</option>
+                      <option>swing</option>
+                      <option>missile</option>
+                      <option>skill</option>
+                      <option>spell</option>
+                      <option>item</option>
+                      <option>escape</option>
+                      <option>victory</option>
+                      <option>dying</option>
+                      <option>abnormal</option>
+                      <option>sleep</option>
+                      <option>dead</option>
+                    </select>
+                  </div>
+            
+                  <div id="Div_JumpHeight" name="OptionDiv">
+                    Jump Height:<input type="text" id="Command_JumpHeight">
+                  </div>
+            
+                  <div id="Div_WaitForJump" name="OptionDiv">
+                    Wait For Jump?
+                    <input type="radio" name="waitforjump" value="true">Yes<input type="radio" name="waitforjump" value="false">No
+                  </div>
+            
+                  <div id="Div_AnimationID" name="OptionDiv">
+                    Animation ID:<input type="text" id="Command_AnimationID">
+                  </div>
+            
+                  <div id="Div_MirrorAnimation" name="OptionDiv">
+                    Mirror Animation?
+                    <input type="radio" name="mirroranimation" value="true">Yes<input type="radio" name="mirroranimation" value="false">No
+                  </div>
+            
+                  <div id="Div_WaitForAnimation" name="OptionDiv">
+                    Wait For Animation?
+                    <input type="radio" name="waitforanimation" value="true">Yes<input type="radio" name="waitforanimation" value="false">No
+                  </div>
+            
+                  <div id="Div_WaitForMovement" name="OptionDiv">
+                    Wait For Movement?
+                    <input type="radio" name="waitformovement" value="true">Yes<input type="radio" name="waitformovement" value="false">No
+                  </div>
+            
+                  <!-- PROJECTILE SPECIFIC-->
+            
+                  <div id="Div_Projectile_StartLocation"  name="OptionDiv">
+                    Start Location
+                    <input type="radio" name="projectile_start_type" value="target">Target<input type="radio" name="projectile_start_type" value="point">Point
+                    <div id="Div_Projectile_StartTargetSelect">
+                      Targets:<select id="Command_Projectile_Start_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_Projectile_Start_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Centralize?
+                      <input type="radio" name="projectile_start_centralize" value="true">Center Projectile<input type="radio" name="projectile_start_centralize" value="false">Create Each
+                    </div>
+                    <div>
+                      Target Location:
+                      <select id="Command_Projectile_Start_TargetLocation_Select">
+                        <option>front head</option>
+                        <option>front center</option>
+                        <option>front base</option>
+                        <option>middle head</option>
+                        <option>middle center</option>
+                        <option>middle base</option>
+                        <option>back head</option>
+                        <option>back center</option>
+                        <option>back base</option>
+                      </select>
+                    </div>
+                    <div>
+                      Point X:<input type="text" id="Command_Projectile_Start_PointX">
+                    </div>
+                    <div>
+                      Point Y:<input type="text" id="Command_Projectile_Start_PointY">
+                    </div>
+                    <div>
+                      Offset X:<input type="text" id="Command_Projectile_Start_OffsetX">
+                    </div>
+                    <div>
+                      Offset Y:<input type="text" id="Command_Projectile_Start_OffsetY">
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_EndLocation"  name="OptionDiv">
+                    End Location
+                    <input type="radio" name="projectile_end_type" value="target">Target<input type="radio" name="projectile_end_type" value="point">Point
+                    <div id="Div_Projectile_EndTargetSelect">
+                      Targets:<select id="Command_Projectile_End_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_Projectile_End_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Centralize?
+                      <input type="radio" name="projectile_end_centralize" value="true">Center Projectile<input type="radio" name="projectile_end_centralize" value="false">Create Each
+                    </div>
+                    <div>
+                      Target Location:
+                      <select id="Command_Projectile_End_TargetLocation_Select">
+                        <option>front head</option>
+                        <option>front center</option>
+                        <option>front base</option>
+                        <option>middle head</option>
+                        <option>middle center</option>
+                        <option>middle base</option>
+                        <option>back head</option>
+                        <option>back center</option>
+                        <option>front base</option>
+                      </select>
+                    </div>
+                    <div>
+                      Point X:<input type="text" id="Command_Projectile_End_PointX">
+                    </div>
+                    <div>
+                      Point Y:<input type="text" id="Command_Projectile_End_PointY">
+                    </div>
+                    <div>
+                      Offset X:<input type="text" id="Command_Projectile_End_OffsetX">
+                    </div>
+                    <div>
+                      Offset Y:<input type="text" id="Command_Projectile_End_OffsetY">
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_AnimationID"  name="OptionDiv">
+                    Animation ID:<input type="text" id="Command_Projectile_AnimationID">
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_IconID"  name="OptionDiv">
+                    Icon ID:<input type="text" id="Command_Projectile_IconID">
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_PictureName"  name="OptionDiv">
+                    Picture Name:<input type="text" id="Command_Projectile_PictureName">
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_Duration"  name="OptionDiv">
+                    Duration:<input type="text" id="Command_Projectile_Duration">
+                    <hr>
+                  </div>
+            
+                  <div id="Div_WaitForProjectile"  name="OptionDiv">
+                    Wait For Projectile?
+                    <input type="radio" name="waitforprojectile" value="true">Yes<input type="radio" name="waitforprojectile" value="false">No
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Projectile_ExtraSettings"  name="OptionDiv">
+                    <div>
+                      Auto Angle?
+                    <input type="radio" name="projectile_auto_angle" value="true">Automatically Angle<input type="radio" name="projectile_auto_angle" value="false">Normal
+                    </div>
+                    <div>
+                      Angle Offset:<input type="text" id="Command_Projectile_AngleOffset">
+                    </div>
+                    <div>
+                      Arc Peaking:<input type="text" id="Command_Projectile_ArcPeaking">
+                    </div>
+                    <div>
+                      Easing:
+                      <select id="Command_Projectile_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Spin Speed:<input type="text" id="Command_Projectile_SpinSpeed">
+                    </div>
+                    <div id="Div_Projectile_ExtraSettings_Picture_Icon" name="OptionDiv">
+                      <div>
+                        Blend Mode:
+                        <select id="Command_Projectile_BlendMode_Select">
+                          <option value="0">0 - Normal</option>
+                          <option value="1">1 - Additive</option>
+                          <option value="2">2 - Multiply</option>
+                          <option value="3">3 - Screen</option>
+                        </select>
+                      </div>
+                      <div>
+                        Hue:<input type="text" id="Command_Projectile_Hue">
+                      </div>
+                      <div>
+                        Scale:<input type="text" id="Command_Projectile_Scale">
+                      </div>
+                    </div>
+            
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Wait" name="OptionDiv">
+                    <div>
+                      Duration:<input type="text" id="Command_Wait">
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_ShakeScreen" name="OptionDiv">
+                    <div>
+                      Power(0-9):<input type="text" id="Command_ShakeScreen_Power">
+                    </div>
+                    <div>
+                      Speed(0-9):<input type="text" id="Command_ShakeScreen_Speed">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="Command_ShakeScreen_Duration">
+                    </div>
+                    <div>
+                      Wait For Completion?
+                      <input type="radio" name="waitforshakescreen" value="true">Yes<input type="radio" name="waitforshakescreen" value="false">No
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_Mech_ActionEffect"  name="OptionDiv">
+                    <div id="Div_Mech_ActionEffect_Select">
+                      Targets:<select id="Command_Mech_ActionEffect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_Mech_ActionEffect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                  </div>
+            
+                  <div id="Div_Anim_ActionAnimation"  name="OptionDiv">
+                    <div id="Div_Anim_ActionAnimation_Select">
+                      Targets:<select id="Command_Anim_ActionAnimation_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_Anim_ActionAnimation_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Mirror Animation?
+                      <input type="radio" name="mirroranimation_actionanimation" value="true">Mirror<input type="radio" name="mirroranimation_actionanimation" value="false">Normal
+                    </div>
+                    <div>
+                      Wait For Animation?
+                      <input type="radio" name="waitforanimation_actionanimation" value="true">On<input type="radio" name="waitforanimation_actionanimation" value="false">Off
+                    </div>
+                  </div>
+            
+                  <div id="Div_DB_Animation"  name="OptionDiv">
+                    <div id="Div_DB_Animation_Target_Select">
+                      Targets:<select id="Command_DB_Animation_Target_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_DB_Animation_Target_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Motion Animation:<input type="text" id="Command_DB_Animation_MotionAnimation">
+                    </div>
+                  </div>
+            
+                  <div id="Div_Float"  name="OptionDiv">
+                    <div id="Div_Float_Target_Select">
+                      Targets:<select id="Command_Float_Target_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_Float_Target_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Desired Height:<input type="text" id="Command_Float_Height">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="Command_Float_Duration">
+                    </div>
+                    <div>
+                      Easing:
+                      <select id="Command_Float_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Float?
+                      <input type="radio" name="waitforfloat" value="true">On<input type="radio" name="waitforfloat" value="false">Off
+                    </div>
+                  </div>
+            
+                  <div id="Div_ACSET_FinishAction" name="OptionDiv">
+                    <div>
+                      Immortal: Off
+                      <input type="radio" name="acset_finishaction_immortaloff" value="true">Yes<input type="radio" name="acset_finishaction_immortaloff" value="false">No
+                    </div>
+                    <div>
+                      Wait For New Line?
+                      <input type="radio" name="acset_finishaction_waitfornewline" value="true">Yes<input type="radio" name="acset_finishaction_waitfornewline" value="false">No
+                    </div>
+                    <div>
+                      Wait For Effects?
+                      <input type="radio" name="acset_finishaction_waitforeffects" value="true">Yes<input type="radio" name="acset_finishaction_waitforeffects" value="false">No
+                    </div>
+                    <div>
+                      Clear Battle Log?
+                      <input type="radio" name="acset_finishaction_clearbattlelog" value="true">Yes<input type="radio" name="acset_finishaction_clearbattlelog" value="false">No
+                    </div>
+                    <div>
+                      Home Reset?
+                      <input type="radio" name="acset_finishaction_homereset" value="true">Yes<input type="radio" name="acset_finishaction_homereset" value="false">No
+                    </div>
+                    <div>
+                      Wait For Movement?
+                      <input type="radio" name="acset_finishaction_waitformovement" value="true">Yes<input type="radio" name="acset_finishaction_waitformovement" value="false">No
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_ACSET_SetupAction" name="OptionDiv">
+                    <div>
+                      Display Action?
+                      <input type="radio" name="acset_setupaction_displayaction" value="true">Yes<input type="radio" name="acset_setupaction_displayaction" value="false">No
+                    </div>
+                    <div>
+                      Immortal: On
+                      <input type="radio" name="acset_setupaction_immortal_on" value="true">Yes<input type="radio" name="acset_setupaction_immortal_on" value="false">No
+                    </div>
+                    <div>
+                      Battle Step
+                      <input type="radio" name="acset_setupaction_battlestep" value="true">Yes<input type="radio" name="acset_setupaction_battlestep" value="false">No
+                    </div>
+                    <div>
+                      Wait For Movement?
+                      <input type="radio" name="acset_setupaction_waitformovement" value="true">Yes<input type="radio" name="acset_setupaction_waitformovement" value="false">No
+                    </div>
+                    <div>
+                      Cast Animation?
+                      <input type="radio" name="acset_setupaction_castanimation" value="true">Yes<input type="radio" name="acset_setupaction_castanimation" value="false">No
+                    </div>
+                    <div>
+                      Wait For Animation?
+                      <input type="radio" name="acset_setupaction_waitforanimation" value="true">Yes<input type="radio" name="acset_setupaction_waitforanimation" value="false">No
+                    </div>
+                    <hr>
+                  </div>
+            
+                  <div id="Div_MOVE_MoveToPoint" name="OptionDiv">
+                    <div id="Div_MOVE_MoveToPoint_TargetSelect">
+                      Targets:<select id="Command_MOVE_MoveToPoint_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_MOVE_MoveToPoint_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Destination Point:
+                      <button onclick="let buttonValue = 'home'; document.getElementById('Command_MOVE_MoveToPoint_DestinationPoint_InputText').innerText = buttonValue; if(EditedSequenceBlock){ EditedSequenceBlock.commandList[0].parameters[3]['Destination:str'] = buttonValue; }">Home</button>
+                      <button onclick="let buttonValue = 'center'; document.getElementById('Command_MOVE_MoveToPoint_DestinationPoint_InputText').innerText = buttonValue; if(EditedSequenceBlock){ EditedSequenceBlock.commandList[0].parameters[3]['Destination:str'] = buttonValue; }">Center</button>
+                      <button onclick="let buttonValue = 'point x, y'; document.getElementById('Command_MOVE_MoveToPoint_DestinationPoint_InputText').innerText = buttonValue; if(EditedSequenceBlock){ EditedSequenceBlock.commandList[0].parameters[3]['Destination:str'] = buttonValue; }">Point X, Y</button>
+                      <br>
+                      <span id="Command_MOVE_MoveToPoint_DestinationPoint_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Offset Adjustment:
+                      <select id="Command_MOVE_MoveToPoint_OffsetAdjustment_Select">
+                        <option value="none">Normal - No adjustments made</option>
+                        <option value="horz">Horizontal - Actors adjust left, Enemies adjust right</option>
+                        <option value="vert">Vertical - Actors adjust Up, Enemies adjust down</option>
+                        <option value="horz + vert">Both - Applies both Horizontal and Vertical</option>
+                      </select>
+                    </div>
+                    <div>
+                      Offset X:<input type="text" id="Command_MOVE_MoveToPoint_OffsetX">
+                    </div>
+                    <div>
+                      Offset Y:<input type="text" id="Command_MOVE_MoveToPoint_OffsetY">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="Command_MOVE_MoveToPoint_Duration">
+                    </div>
+                    <div>
+                      Face Destination?<input type="radio" name="move_movetopoint_facedestination" value="true">Yes<input type="radio" name="move_movetopoint_facedestination" value="false">No
+                    </div>
+                    <div>
+                      Movement Easing:
+                      <select id="Command_MOVE_MoveToPoint_MovementEasing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Movement Motion:
+                      <select id="Command_MOVE_MoveToPoint_MovementMotion_Select">
+                        <option>walk</option>
+                        <option>wait</option>
+                        <option>chant</option>
+                        <option>guard</option>
+                        <option>damage</option>
+                        <option>evade</option>
+                        <option>thrust</option>
+                        <option>swing</option>
+                        <option>missile</option>
+                        <option>skill</option>
+                        <option>spell</option>
+                        <option>item</option>
+                        <option>escape</option>
+                        <option>victory</option>
+                        <option>dying</option>
+                        <option>abnormal</option>
+                        <option>sleep</option>
+                        <option>dead</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Movement?
+                      <input type="radio" name="move_movetopoint_waitformovement" value="true">Yes<input type="radio" name="move_movetopoint_waitformovement" value="false">No
+                    </div>
+                  </div>
+            
+                  <div id="Div_MOTION_MotionType" name="OptionDiv">
+                    <div id="Div_MOTION_MotionType_TargetSelect">
+                      Targets:<select id="Command_MOTION_MotionType_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_MOTION_MotionType_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Motion Type:
+                      <select id="Command_MOTION_MotionType_MotionType_Select">
+                        <!-- Don't copy from there : Remove 'attack' option before any copy -->
+                        <option>walk</option>
+                        <option>wait</option>
+                        <option>chant</option>
+                        <option>guard</option>
+                        <option>damage</option>
+                        <option>evade</option>
+                        <option>attack</option>
+                        <option>thrust</option>
+                        <option>swing</option>
+                        <option>missile</option>
+                        <option>skill</option>
+                        <option>spell</option>
+                        <option>item</option>
+                        <option>escape</option>
+                        <option>victory</option>
+                        <option>dying</option>
+                        <option>abnormal</option>
+                        <option>sleep</option>
+                        <option>dead</option>
+                      </select>
+                    </div>
+                    <div>
+                      Show Weapon?
+                      <input type="radio" name="motion_motiontype_showweapon" value="true">Yes<input type="radio" name="motion_motiontype_showweapon" value="false">No
+                    </div>
+                  </div>
+            
+                  <div id="Div_COMMAND_CommonEvent" name="OptionDiv">
+                    Common Event Id:<input type="text" id="Command_CommonEvent_InputText">
+                  </div>
+            
+                  <div id="Div_COMMAND_SpinRotate" name="OptionDiv">
+                    <div id="Div_COMMAND_SpinRotate_Select">
+                      Targets:<select id="Command_COMMAND_SpinRotate_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_COMMAND_SpinRotate_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Angle:<input type="text" id="Command_COMMAND_SpinRotate_Angle_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="Command_COMMAND_SpinRotate_Duration_InputText">
+                    </div>
+                    <div>
+                      Spin Easing:
+                      <select id="Command_COMMAND_SpinRotate_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Revert Angle on Finish?
+                      <input type="radio" name="command_spinrotate_revertonfinish" value="true">Yes<input type="radio" name="command_spinrotate_revertonfinish" value="false">No
+                    </div>
+                    <div>
+                      Wait For Spin?
+                      <input type="radio" name="command_spinrotate_waitforspin" value="true">Yes<input type="radio" name="command_spinrotate_waitforspin" value="false">No
+                    </div>
+                  </div>
+            
+            
+                  <div id="Div_COMMAND_ZOOM_Scale" name="OptionDiv">
+                    <div>
+                      Scale:<input type="text" id="COMMAND_ZOOM_Scale_Scale_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_ZOOM_Scale_Duration_InputText">
+                    </div>
+                    <div>
+                      Zoom Easing:
+                      <select id="COMMAND_ZOOM_Scale_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Zoom?
+                      <input type="radio" name="zoom_scale_waitforzoom" value="true">Yes<input type="radio" name="zoom_scale_waitforzoom" value="false">No
+                    </div>
+                  </div>
+                  
+            
+                  <!-- Move: Face Direction -->
+                  <div id="Div_COMMAND_MOVE_FaceDirection" name="OptionDiv">
+                    <div id="Div_COMMAND_MOVE_FaceDirection_Target_Select">
+                      Targets:<select id="COMMAND_MOVE_FaceDirection_Target_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_MOVE_FaceDirection_Target_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Direction:
+                      <select id="COMMAND_MOVE_FaceDirection_Direction_Select">
+                        <option>forward</option>
+                        <option>backward</option>
+                        <option>random</option>
+                      </select>
+                    </div>
+                  </div>
+            
+                  <!-- Move: Distance -->
+                  <div id="Div_COMMAND_MOVE_Distance" name="OptionDiv">
+                    <div id="Div_COMMAND_MOVE_Distance_Target_Select">
+                      Targets:<select id="COMMAND_MOVE_Distance_Target_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_MOVE_Distance_Target_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Distance Adjustment:
+                      <select id="COMMAND_MOVE_Distance_DistanceAdjustment_Select">
+                        <option value="none">Normal - No adjustments made</option>
+                        <option value="horz">Horizontal - Actors adjust left, Enemies adjust right</option>
+                        <option value="vert">Vertical - Actors adjust Up, Enemies adjust down</option>
+                        <option value="horz + vert">Both - Applies both Horizontal and Vertical</option>
+                      </select>
+                    </div>
+                    <div>
+                      Distance: X<input type="text" id="COMMAND_MOVE_Distance_DistanceAdjustment_X"><br>
+                      Distance: Y<input type="text" id="COMMAND_MOVE_Distance_DistanceAdjustment_Y">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_MOVE_Distance_Duration_InputText">
+                    </div>
+                    <div>
+                      Face Destination?<input type="radio" name="move_movedistance_facedestination" value="true">Yes<input type="radio" name="move_movedistance_facedestination" value="false">No
+                    </div>
+                    <div>
+                      Movement Easing:
+                      <select id="COMMAND_MOVE_Distance_Movement_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Movement Motion:
+                      <select id="COMMAND_MOVE_Distance_MotionType_Select">
+                        <option>walk</option>
+                        <option>wait</option>
+                        <option>chant</option>
+                        <option>guard</option>
+                        <option>damage</option>
+                        <option>evade</option>
+                        <option>thrust</option>
+                        <option>swing</option>
+                        <option>missile</option>
+                        <option>skill</option>
+                        <option>spell</option>
+                        <option>item</option>
+                        <option>escape</option>
+                        <option>victory</option>
+                        <option>dying</option>
+                        <option>abnormal</option>
+                        <option>sleep</option>
+                        <option>dead</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Movement?<input type="radio" name="move_movedistance_waitformovement" value="true">Yes<input type="radio" name="move_movedistance_waitformovement" value="false">No
+                    </div>
+                  </div>
+            
+                  <!-- IMPACT : Color Break -->
+                  <div id="Div_COMMAND_IMPACT_ColorBreak" name="OptionDiv">
+                    <div>
+                      Intensity:<input type="text" id="COMMAND_IMPACT_ColorBreak_Intensity_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_IMPACT_ColorBreak_Duration_InputText">
+                    </div>
+                    <div>
+                      Easing Type:
+                      <select id="COMMAND_IMPACT_ColorBreak_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                  </div>
+            
+            
+                  <!-- MOVE : Opacity -->
+                  <div id="Div_COMMAND_MOVE_Opacity" name="OptionDiv">
+                    <div id="Div_COMMAND_MOVE_Opacity_Target_Select">
+                      Targets:<select id="COMMAND_MOVE_Opacity_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_MOVE_Opacity_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Desired Opacity:<input type="text" id="COMMAND_MOVE_Opacity_Amount_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_MOVE_Opacity_Duration_InputText">
+                    </div>
+                    <div>
+                      Opacity Easing:
+                      <select id="COMMAND_MOVE_Opacity_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Opacity?<input type="radio" name="move_opacity_waitforopacity" value="true">Yes<input type="radio" name="move_opacity_waitforopacity" value="false">No
+                    </div>
+                  </div>
+            
+            
+                  <!-- MOTION TRAIL : Create -->
+                  <div id="Div_COMMAND_MOTIONTRAIL_Create" name="OptionDiv"> 
+                    <div id="Div_COMMAND_MOTIONTRAIL_Create_Target_Select">
+                      Targets:<select id="COMMAND_MOTIONTRAIL_Create_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_MOTIONTRAIL_Create_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Delay:<input type="text" id="COMMAND_MOTIONTRAIL_Create_Delay_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_MOTIONTRAIL_Create_Duration_InputText">
+                    </div>
+                    <div>
+                      Hue:<input type="text" id="COMMAND_MOTIONTRAIL_Create_Hue_InputText">
+                    </div>
+                    <div>
+                      Starting Opacity:<input type="text" id="COMMAND_MOTIONTRAIL_Create_StartingOpacity_InputText">
+                    </div>
+                    <div>
+                      Color Tone:<input type="text" id="COMMAND_MOTIONTRAIL_Create_ColorTone_InputText">
+                    </div>
+                    <div>Color helper here:<input type="color"></div>
+                  </div>
+            
+                  <!-- MOTION TRAIL : Remove -->
+                  <div id="Div_COMMAND_MOTIONTRAIL_Remove" name="OptionDiv"> 
+                    <div id="Div_COMMAND_MOTIONTRAIL_Remove_Target_Select">
+                      Targets:<select id="COMMAND_MOTIONTRAIL_Remove_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_MOTIONTRAIL_Remove_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                  </div>
+            
+            
+                  <!-- CAMERA : Focus Target -->
+                  <div id="Div_COMMAND_CAMERA_FOCUSTARGET" name="OptionDiv"> 
+                    <div id="Div_COMMAND_CAMERA_FOCUSTARGET_Target_Select">
+                      Targets:<select id="COMMAND_CAMERA_FOCUSTARGET_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_CAMERA_FOCUSTARGET_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_CAMERA_FOCUSTARGET_Duration_InputText">
+                    </div>
+                    <div>
+                      Camera Easing:
+                      <select id="COMMAND_CAMERA_FOCUSTARGET_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Camera?<input type="radio" name="camera_focustarget_waitforcamera" value="true">Yes<input type="radio" name="camera_focustarget_waitforcamera" value="false">No
+                    </div>
+                  </div>
+            
+                  
+                  <!-- CAMERA : Focus Point -->
+                  <div id="Div_COMMAND_CAMERA_FOCUSPOINT" name="OptionDiv"> 
+                    <div>
+                      X Coordinate:<input type="text" id="COMMAND_CAMERA_FOCUSPOINT_X_InputText">
+                    </div>
+                    <div>
+                      Y Coordinate:<input type="text" id="COMMAND_CAMERA_FOCUSPOINT_Y_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_CAMERA_FOCUSPOINT_Duration_InputText">
+                    </div>
+                    <div>
+                      Camera Easing:
+                      <select id="COMMAND_CAMERA_FOCUSPOINT_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Camera?<input type="radio" name="camera_focuspoint_waitforcamera" value="true">Yes<input type="radio" name="camera_focuspoint_waitforcamera" value="false">No
+                    </div>
+                  </div>
+            
+            
+                  <!-- IMPACT: Shockwave Each Target -->
+                  <div id="Div_COMMAND_IMPACT_Shockwave_EachTarget" name="OptionDiv"> 
+                    <div id="Div_COMMAND_IMPACT_Shockwave_EachTarget_Target_Select">
+                      Targets:<select id="COMMAND_IMPACT_Shockwave_EachTarget_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_IMPACT_Shockwave_EachTarget_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Target Location:
+                      <select id="COMMAND_IMPACT_Shockwave_EachTarget_TargetLocation_Select">
+                        <option>front head</option>
+                        <option>front center</option>
+                        <option>front base</option>
+                        <option>middle head</option>
+                        <option>middle center</option>
+                        <option>middle base</option>
+                        <option>back head</option>
+                        <option>back center</option>
+                        <option>back base</option>
+                      </select>
+                    </div>
+                    <div>
+                      Offset X:<input type="text" id="COMMAND_IMPACT_Shockwave_EachTarget_OffsetX_InputText">
+                    </div>
+                    <div>
+                      Offset Y:<input type="text" id="COMMAND_IMPACT_Shockwave_EachTarget_OffsetY_InputText">
+                    </div>
+                    <div>
+                      Amplitude:<input type="text" id="COMMAND_IMPACT_Shockwave_EachTarget_Amplitude_InputText">
+                    </div>
+                    <div>
+                      Wavelength:<input type="text" id="COMMAND_IMPACT_Shockwave_EachTarget_Wavelength_InputText">
+                    </div>
+                    <div>
+                      Duration:<input type="text" id="COMMAND_IMPACT_Shockwave_EachTarget_Duration_InputText">
+                    </div>
+                  </div>
+            
+            
+                  <!-- MOTION Freeze Motion Frame -->
+                  <div id="Div_MOTION_FreezeMotionFrame" name="OptionDiv">
+                    <div id="Div_MOTION_FreezeMotionFrame_TargetSelect">
+                      Targets:<select id="Command_MOTION_FreezeMotionFrame_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="Command_MOTION_FreezeMotionFrame_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Motion Type:
+                      <select id="Command_MOTION_FreezeMotionFrame_MotionType_Select">
+                        <!-- Don't copy from there : Remove 'attack' option before any copy -->
+                        <option>walk</option>
+                        <option>wait</option>
+                        <option>chant</option>
+                        <option>guard</option>
+                        <option>damage</option>
+                        <option>evade</option>
+                        <option>attack</option>
+                        <option>thrust</option>
+                        <option>swing</option>
+                        <option>missile</option>
+                        <option>skill</option>
+                        <option>spell</option>
+                        <option>item</option>
+                        <option>escape</option>
+                        <option>victory</option>
+                        <option>dying</option>
+                        <option>abnormal</option>
+                        <option>sleep</option>
+                        <option>dead</option>
+                      </select>
+                    </div>
+                    <div>
+                      Frame Index:<input type="text" id="COMMAND_MOTION_FreezeMotionFrame_FrameIndex_InputText">
+                    </div>
+                    <div>
+                      Show Weapon?
+                      <input type="radio" name="motion_freezemotionframe_showweapon" value="true">Yes<input type="radio" name="motion_freezemotionframe_showweapon" value="false">No
+                    </div>
+                  </div>
+
+                  <!-- FLASH SCREEN -->
+                  <div id="Div_COMMAND_FlashScreen" name="OptionDiv">
+                    <div>
+                      Pick Color:
+                      <input type="color" id="flashscreen_color">
+                    </div>
+                    <div>
+                      Intensity(0-255):
+                      <input type="range" min="0" max="255" step="1" id="flashcreen_intensity">
+                    </div>
+                    <div>
+                      Duration:
+                      <input type="number" min="0" max="255" step="1" id="flashcreen_duration">
+                    </div>
+                    <div>
+                      Wait For Flash?
+                      <input type="radio" name="flashscreen_radio_waitForFlash" value="true">Yes
+                      <input type="radio" name="flashscreen_radio_waitForFlash" value="false">No
+                    </div>
+                  </div>
+
+                  <!-- SCALE / GROW / SHRINK -->
+                  <div id="Div_COMMAND_Scale" name="OptionDiv">
+                    <div id="Div_COMMAND_Scale_TargetSelect">
+                      Targets:<select id="COMMAND_Scale_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_Scale_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Scale X:
+                      <input type="text" id="COMMAND_Scale_ScaleX">
+                    </div>
+                    <div>
+                      Scale Y:
+                      <input type="text" id="COMMAND_Scale_ScaleY">
+                    </div>
+                    <div>
+                      Duration:
+                      <input type="text" id="COMMAND_Scale_Duration">
+                    </div>
+                    <div>
+                      Scale Easing:
+                      <select id="COMMAND_Scale_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Scale?
+                      <input type="radio" name="command_scale_radio_waitForFlash" value="true">Yes
+                      <input type="radio" name="command_scale_radio_waitForFlash" value="false">No
+                    </div>
+                  </div>
+                  
+                  <!-- SKEW / DISTORT -->
+                  <div id="Div_COMMAND_Skew" name="OptionDiv">
+                    <div id="Div_COMMAND_Skew_TargetSelect">
+                      Targets:<select id="COMMAND_Skew_TargetSelect_DropList">
+                        <option value="null">----------------</option>
+                        <option value="user">User</option>
+                        <option value="current target">Current Target</option>
+                        <option value="prev target">Previous Target</option>
+                        <option value="next target">Next Target</option>
+                        <option value="all targets">All Targets</option>
+                        <option value="focus">Focus</option>
+                        <option value="not focus">Not Focus</option>
+                        <option value="">----------------</option>
+                        <option value="alive friends">Alive Friends</option>
+                        <option value="alive friends not user">Alive Friends Not User</option>
+                        <option value="alive friends not target">Alives Friends Not Target</option>
+                        <option value="dead friends">Dead Friends</option>
+                        <option value="friend index x">Friend Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive opponents">Alive Opponents</option>
+                        <option value="alive opponents not target">Alive Opponents Not Target</option>
+                        <option value="dead opponents">Dead Opponents</option>
+                        <option value="opponent index x">Opponent Index x</option>
+                        <option value="">----------------</option>
+                        <option value="alive actors">Alive Actors</option>
+                        <option value="alive actors not user">Alive Actors Not User</option>
+                        <option value="alive actors not target">Alive Actors Not Target</option>
+                        <option value="dead actors">Dead Actors</option>
+                        <option value="actor index x">Actor Index x</option>
+                        <option value="actor ID x">Actor ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive enemies">Alive Enemies</option>
+                        <option value="alive enemies not user">Alive Enemies Not User</option>
+                        <option value="alive enemies not target">Alive Enemies Not Target</option>
+                        <option value="dead enemies">Dead Enemies</option>
+                        <option value="enemy index x">Enemy Index x</option>
+                        <option value="enemy ID x">Enemy ID x</option>
+                        <option value="">----------------</option>
+                        <option value="alive battlers">Alive Battlers</option>
+                        <option value="alive battlers not user">Alive Battlers Not User</option>
+                        <option value="alive battlers not target">Alive Battlers Not Target</option>
+                        <option value="dead battlers">Dead Battlers</option>
+                      </select><span id="COMMAND_Skew_TargetSelect_InputText" class="textarea" contenteditable></span>
+                    </div>
+                    <div>
+                      Skew X:
+                      <input type="text" id="COMMAND_Skew_SkewX">
+                    </div>
+                    <div>
+                      Skew Y:
+                      <input type="text" id="COMMAND_Skew_SkewY">
+                    </div>
+                    <div>
+                      Duration:
+                      <input type="text" id="COMMAND_Skew_Duration">
+                    </div>
+                    <div>
+                      Skew Easing:
+                      <select id="COMMAND_Skew_Easing_Select">
+                        <option>Linear</option>
+                        <option>InSine</option>
+                        <option>OutSine</option>
+                        <option>InOutSine</option>
+                        <option>InQuad</option>
+                        <option>OutQuad</option>
+                        <option>InOutQuad</option>
+                        <option>InCubic</option>
+                        <option>OutCubic</option>
+                        <option>InOutCubic</option>
+                        <option>InQuart</option>
+                        <option>OutQuart</option>
+                        <option>InOutQuart</option>
+                        <option>InQuint</option>
+                        <option>OutQuint</option>
+                        <option>InOutQuint</option>
+                        <option>InExpo</option>
+                        <option>OutExpo</option>
+                        <option>InOutExpo</option>
+                        <option>InCirc</option>
+                        <option>OutCirc</option>
+                        <option>InOutCirc</option>
+                        <option>InBack</option>
+                        <option>OutBack</option>
+                        <option>InOutBack</option>
+                        <option>InElastic</option>
+                        <option>OutElastic</option>
+                        <option>InOutElastic</option>
+                        <option>InBounce</option>
+                        <option>OutBounce</option>
+                        <option>InOutBounce</option>
+                      </select>
+                    </div>
+                    <div>
+                      Wait For Skew?
+                      <input type="radio" name="command_skew_radio_waitForSkew" value="true">Yes
+                      <input type="radio" name="command_skew_radio_waitForSkew" value="false">No
+                    </div>
+                  </div>
+
+                  <div id="Div_COMMAND_OnceParallel" name="OptionDiv">
+                    <div>
+                      Common Event ID:
+                      <input type="number" id="COMMAND_MECH_ONCEPARALLEL_commonEventId">
+                    </div>
+                  </div>
+
+                  <!-- INSERT NEW OPTION DIV HERE -->
+            
+                <!--DIV OPTIONS CONTENT END - PUT OPTIONS ABOVE-->  
+                </div>
+            
+            
+              </div>
+
+
+        <!-- END OF WRAPPER -->    
+        </div>
+
+
+          <!-- HEX TOOLS -->
+          <script src="./InterfaceJs/HexTools.js"></script>
+        
+          <!-- RADIO FUNCTIONS-->
+          <script src="./InterfaceJs/Radio_Functions.js"></script>
+        
+          <!-- COMMAND OPTIONS WINDOW FUNCTIONS-->
+          <script src="./InterfaceJs/Window_CommandOptions.js"></script>
+        
+          <div id="COMMAND_MoveToTarget" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_MoveToTarget","MOVE: Move To Target(s)",{"Targets1:arraystr":"[\"user\"]","Targets2:arraystr":"[\"all targets\"]","TargetLocation:str":"front base","MeleeDistance:eval":"24","OffsetAdjust:str":"horz","OffsetX:eval":"0","OffsetY:eval":"0","Duration:eval":"12","FaceDirection:eval":"true","EasingType:str":"Linear","MotionType:str":"walk","WaitForMovement:eval":"true"}]}</div>
+          <div id="COMMAND_Jump" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Jump","MOVE: Jump",{"Targets:arraystr":"[\"user\"]","Height:eval":"100","Duration:eval":"12","WaitForJump:eval":"false"}]}</div>
+          <div id="COMMAND_ShowAnimation" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Animation_ShowAnimation","ANIM: Show Animation",{"Targets:arraystr":"[\"all targets\"]","AnimationID:num":"1","Mirror:eval":"false","WaitForAnimation:eval":"true"}]}</div>
+          <div id="COMMAND_Projectile_Animation" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Projectile_Animation","PROJECTILE: Animation",{"Coordinates":"","Start:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"user\\\"]\",\"TargetCenter:eval\":\"false\",\"TargetLocation:str\":\"middle center\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Goal:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"all targets\\\"]\",\"TargetCenter:eval\":\"false\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Settings":"","AnimationID:num":"77","Duration:eval":"20","WaitForProjectile:eval":"true","Extra:struct":"{\"AutoAngle:eval\":\"true\",\"AngleOffset:eval\":\"+0\",\"Arc:eval\":\"0\",\"EasingType:str\":\"Linear\",\"Spin:eval\":\"+0.0\"}"}]}</div>
+          <div id="COMMAND_Projectile_Icon" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Projectile_Icon","PROJECTILE: Icon",{"Coordinates":"","Start:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"user\\\"]\",\"TargetCenter:eval\":\"false\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Goal:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"all targets\\\"]\",\"TargetCenter:eval\":\"false\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Settings":"","Icon:eval":"118","Duration:eval":"20","WaitForProjectile:eval":"true","Extra:struct":"{\"AutoAngle:eval\":\"true\",\"AngleOffset:eval\":\"+0\",\"Arc:eval\":\"0\",\"BlendMode:num\":\"0\",\"EasingType:str\":\"Linear\",\"Hue:eval\":\"0\",\"Scale:eval\":\"1.0\",\"Spin:eval\":\"+0.0\"}"}]}</div>
+          <div id="COMMAND_Projectile_Picture" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Projectile_Picture","PROJECTILE: Picture",{"Coordinates":"","Start:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"user\\\"]\",\"TargetCenter:eval\":\"false\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Goal:struct":"{\"Type:str\":\"target\",\"Targets:arraystr\":\"[\\\"all targets\\\"]\",\"TargetCenter:eval\":\"false\",\"PointX:eval\":\"Graphics.width / 2\",\"PointY:eval\":\"Graphics.height / 2\",\"OffsetX:eval\":\"+0\",\"OffsetY:eval\":\"+0\"}","Settings":"","Picture:str":"Untitled","Duration:eval":"20","WaitForProjectile:eval":"true","Extra:struct":"{\"AutoAngle:eval\":\"true\",\"AngleOffset:eval\":\"+0\",\"Arc:eval\":\"0\",\"BlendMode:num\":\"0\",\"EasingType:str\":\"Linear\",\"Hue:eval\":\"0\",\"Scale:eval\":\"1.0\",\"Spin:eval\":\"+0.0\"}"}]}</div>
+          <div id="COMMAND_Wait" style="display:none">{"code":230,"indent":0,"parameters":[60]}</div>
+          <div id="COMMAND_ShakeScreen" style="display:none">{"code":225,"indent":0,"parameters":[5,5,60,true]}</div>
+          <div id="COMMAND_FlashScreen" style="display:none">{"code":224,"indent":0,"parameters":[[255,255,255,170],60,true]}</div>
+          <div id="COMMAND_Mech_ActionEffect" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Mechanics_ActionEffect","MECH: Action Effect",{"Targets:arraystr":"[\"all targets\"]"}]}</div>
+          <div id="COMMAND_Anim_ActionAnimation" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Animation_ActionAnimation","ANIM: Action Animation",{"Targets:arraystr":"[\"all targets\"]","Mirror:eval":"false","WaitForAnimation:eval":"true"}]}</div>
+          <div id="COMMAND_DB_Animation" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_DB_DragonbonesMotionAni","DB: Dragonbones Animation",{"Targets:arraystr":"[\"user\"]","MotionAni:str":"attack"}]}</div>
+          <div id="COMMAND_Float" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Float","MOVE: Float",{"Targets:arraystr":"[\"user\"]","Height:eval":"100","Duration:eval":"12","EasingType:str":"Linear","WaitForFloat:eval":"true"}]}</div>
+          <div id="COMMAND_ACSET_FinishAction" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Set_FinishAction","ACSET: Finish Action",{"ApplyImmortal:eval":"true","WaitForNewLine:eval":"true","WaitForEffect:eval":"true","ClearBattleLog:eval":"true","ActionEnd:eval":"true","WaitForMovement:eval":"true"}]}</div>
+          <div id="COMMAND_ACSET_SetupAction" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Set_SetupAction","ACSET: Setup Action Set",{"DisplayAction:eval":"true","ApplyImmortal:eval":"true","ActionStart:eval":"true","WaitForMovement:eval":"true","CastAnimation:eval":"true","WaitForAnimation:eval":"true"}]}</div>
+          <div id="COMMAND_MOVE_MoveToPoint" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_MoveToPoint","MOVE: Move To Point",{"Targets:arraystr":"[\"user\"]","Destination:str":"home","OffsetAdjust:str":"horz","OffsetX:eval":"0","OffsetY:eval":"0","Duration:eval":"12","FaceDirection:eval":"true","EasingType:str":"Linear","MotionType:str":"walk","WaitForMovement:eval":"true"}]}</div>
+          <div id="COMMAND_MOTION_MotionType" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Motion_MotionType","MOTION: Motion Type",{"Targets:arraystr":"[\"user\"]","MotionType:str":"attack","ShowWeapon:eval":"true"}]}</div>
+          <div id="COMMAND_CommonEvent" style="display:none">{"code":117,"indent":0,"parameters":[2]}</div>
+          <div id="COMMAND_SpinRotate" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Spin","MOVE: Spin/Rotate",{"Targets:arraystr":"[\"user\"]","Angle:eval":"360","Duration:eval":"12","EasingType:str":"Linear","RevertAngle:eval":"true","WaitForSpin:eval":"true"}]}</div>
+          <div id="COMMAND_ZOOM_Scale" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Zoom_Scale","ZOOM: Change Scale",{"Scale:eval":"1.0","Duration:eval":"60","EasingType:str":"InOutSine","WaitForZoom:eval":"true"}]}</div>
+          <div id="COMMAND_MOVE_FaceDirection" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_FaceDirection","MOVE: Face Direction",{"Targets:arraystr":"[\"user\"]","Direction:str":"forward"}]}</div>  
+          <div id="COMMAND_MoveDistance" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_MoveBy","MOVE: Move Distance",{"Targets:arraystr":"[\"user\"]","DistanceAdjust:str":"horz","DistanceX:eval":"48","DistanceY:eval":"0","Duration:eval":"12","FaceDirection:eval":"true","EasingType:str":"Linear","MotionType:str":"walk","WaitForMovement:eval":"true"}]}</div>
+          <div id="COMMAND_IMPACT_ColorBreak" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Impact_ColorBreak","IMPACT: Color Break",{"Intensity:eval":"60","Duration:eval":"60","EasingType:str":"OutBack"}]}</div>
+          <div id="COMMAND_MOVE_Opacity" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Opacity","MOVE: Opacity",{"Targets:arraystr":"[\"user\"]","Opacity:eval":"255","Duration:eval":"12","EasingType:str":"Linear","WaitForOpacity:eval":"true"}]}</div>
+          <div id="COMMAND_MOTIONTRAIL_Create" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Impact_MotionTrailCreate","IMPACT: Motion Trail Create",{"Targets:arraystr":"[\"user\"]","delay:num":"1","duration:num":"30","hue:num":"0","opacityStart:num":"200","tone:eval":"[0, 0, 0, 0]"}]}</div>
+          <div id="COMMAND_MOTIONTRAIL_Remove" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Impact_MotionTrailRemove","IMPACT: Motion Trail Remove",{"Targets:arraystr":"[\"user\"]"}]}</div>
+          <div id="COMMAND_CAMERA_FOCUSTARGET" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Camera_FocusTarget","CAMERA: Focus Target(s)",{"Targets:arraystr":"[\"user\"]","Duration:eval":"60","EasingType:str":"InOutSine","WaitForCamera:eval":"true"}]}</div>
+          <div id="COMMAND_CAMERA_FOCUSPOINT" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Camera_FocusPoint","CAMERA: Focus Point",{"FocusX:eval":"Graphics.width / 2","FocusY:eval":"Graphics.height / 2","Duration:eval":"60","EasingType:str":"InOutSine","WaitForCamera:eval":"true"}]}</div>
+          <div id="COMMAND_IMPACT_Shockwave_EachTarget" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Impact_ShockwaveEachTargets","IMPACT: Shockwave from Each Target(s)",{"Targets:arraystr":"[\"all targets\"]","TargetLocation:str":"middle center","OffsetX:eval":"+0","OffsetY:eval":"+0","Amp:eval":"30","Wave:eval":"160","Duration:eval":"60"}]}</div>
+          <div id="COMMAND_MOTION_FreezeMotionFrame" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Motion_FreezeMotionFrame","MOTION: Freeze Motion Frame",{"Targets:arraystr":"[\"user\"]","MotionType:str":"attack","Frame:num":"2","ShowWeapon:eval":"true"}]}</div>
+          <div id="COMMAND_Scale" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Scale","MOVE: Scale/Grow/Shrink",{"Targets:arraystr":"[\"user\"]","ScaleX:eval":"1.00","ScaleY:eval":"1.00","Duration:eval":"12","EasingType:str":"Linear","WaitForScale:eval":"true"}]}</div>
+          <div id="COMMAND_Skew" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Movement_Skew","MOVE: Skew/Distort",{"Targets:arraystr":"[\"user\"]","SkewX:eval":"0.00","SkewY:eval":"0.00","Duration:eval":"12","EasingType:str":"Linear","WaitForSkew:eval":"true"}]}</div>
+          <div id="COMMAND_OnceParallel" style="display:none">{"code":357,"indent":0,"parameters":["VisuMZ_1_BattleCore","ActSeq_Mechanics_OnceParallel","MECH: Once Parallel",{"CommonEventID:num":"1"}]}</div>
+
+          <!--DOCUMENT EVENT LISTENER FUNCTIONS  -->
+            <script src="./InterfaceJs/DocEventListener.js"></script>
+        
+            <!--DRAG FUNCTIONS  -->
+            <script src="./InterfaceJs/DragElements.js"></script>
+        
+            <!--WINDOW - CREATE BLOCKS BUTTONS  -->
+            <script src="./InterfaceJs/Window_CreateBlocks.js"></script>
+        
+            <!--SEQUENCE BLOCK FUNCTIONS  -->
+            <script src="./InterfaceJs/SequenceBlock.js"></script>
+        
+            <!--CANVAS & LINE FUNCTIONS-->
+            <script src="./InterfaceJs/Canvas_Lines.js"></script>
+        
+        
+             <!--MAIN-->
+            <script>
+        
+              
+        
+              // MAIN
+        
+              StartBlock = new SequenceBlock(1);
+              document.body.appendChild(StartBlock.GetBlockElement());
+              StartBlock.SetAsStartBlock();
+        
+              EndBlock = new SequenceBlock(2);
+              document.body.appendChild(EndBlock.GetBlockElement());
+              EndBlock.SetAsEndBlock();
+        
+              StartPoint = {x:0,y:0};
+              EndPoint = {x:750,y:650};
+        
+              function GetSequence(){
+                ret = [];
+                var currentBlock = StartBlock;
+                while(currentBlock != null){
+                  for (const command of currentBlock.commandList){
+                    ret.push(command);
+                  }
+                  currentBlock = currentBlock.GetChildBlock();
+                }
+                return ret;
+              }
+              
+              OnMouseMove_Action_Add(TraceLines.bind(this));
+        
+              document.mouseX = 0;
+              document.mouseY = 0;
+              document.GetMousePosition = function(){
+                let ret = {};
+                ret.x = document.mouseX;
+                ret.y = document.mouseY;
+                ret.left = ret.x,
+                ret.top = ret.y;
+                return ret;
+              }
+              document.UpdateMousePosition = function(e){
+                document.mouseX = e.clientX;
+                document.mouseY = e.clientY;
+              }
+              OnMouseMove_Action_Add(document.UpdateMousePosition.bind(this));
+        
+              document.onmousemove = (e) => { 
+                for(const action of document.onmousemoveActions){
+                  action(e);
+                }
+              };
+              
+              //Make CommandOptions Window draggable
+              dragElement(document.getElementById('CommandOptions'));
+            </script>
+    </body>
+</html>

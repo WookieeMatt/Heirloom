@@ -1,0 +1,401 @@
+/* MODIFY INTERFACE COLORS HERE (:root) */
+:root {
+    --color-1: #5C1B1B;
+    --color-2: #C93838;
+    --color-3: #C9C838;
+    --color-4: #1D587D;
+    --color-5: #248AC9;
+    --color-canvas-bg: #212121;
+}
+
+@font-face {
+    font-family: "Kanit";
+    src: url(Kanit-Light.ttf) format("truetype");
+}
+
+h1 { 
+    font-family: "Kanit", sans-serif;
+    color: #ededed;
+}
+body {
+    width: 100%;
+    height: 100%;
+    background-color: blue;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+button:hover {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+#wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.managementRow {
+    width: 100%;
+    min-height: 40px;
+    max-height: 40px;
+    /* background-color: var(--color-1); */
+    background: radial-gradient(var(--color-2), var(--color-1));
+}
+
+.growAnimation {
+    animation-name: growAnimation;
+    animation-duration: 1s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+
+@keyframes growAnimation {
+    from {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.25);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+.popOnAppear {
+  animation-name: popOnAppear;
+  animation-duration: 0.4s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes popOnAppear {
+  from {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.5);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.managementDiv {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.mainContainer {
+    height: 100%;
+}
+
+.main {
+    width: 100%;
+    height: 100%;
+    overflow-y: hidden;
+    border-collapse: collapse;
+}
+
+.mainRow {
+    vertical-align: top;
+    width: 100%;
+    height: 100%;
+    background-color: green;
+}
+
+.nodesCol {
+    height: 100%;
+    background-color: #ededed;
+    padding: 0;
+}
+
+.commandsCol {
+    width: 200px;
+    background-color: #212121;
+    height: 100%;
+    color:#ededed;
+}
+
+#Commands {
+  text-align: center;
+}
+
+.commandsCol h1 {
+    text-align: center;
+}
+
+.commandsCol button {
+    height: 40px;
+    width: 100%;
+    background-color: var(--color-4);
+    /* background: linear-gradient(180deg, #17929d, #212121); */
+    /* background: linear-gradient(180deg, rgb(199, 171, 16), #212121); */
+    font-family: "Kanit", sans-serif;
+    color: #ededed;
+    font-size: 20px;
+    border-style: solid;
+    border-color: #ededed;
+    border-width: 1px;
+    /* border: none; */
+    transition: all 0.3s ease-out;
+}
+
+.commandsCol button:hover {
+    height: 50px;
+    width: 100%;
+    /* background: linear-gradient(0deg, rgb(199, 171, 16), #ededed); */
+    font-size: 20px;
+    color: #212121;
+    border-style: inset;
+    border-width: 5px;
+    border-color: #ededed;
+    animation-timing-function: ease-in-out;;
+    animation-fill-mode: forwards;
+    animation-duration: .3s;
+    animation-name: buttonShine;
+    
+    transition: color 0.3s ease-in-out, border 0.3s ease-in-out, font 0.3s ease-in-out, height 0.3s ease-in-out;
+}
+
+@keyframes buttonShine {
+  from {
+    background: linear-gradient(0deg, var(--color-5), #ededed);
+  }
+  10% {
+    background: linear-gradient(36deg, var(--color-5), #ededed);
+  }
+  20% {
+    background: linear-gradient(72deg, var(--color-5), #ededed);
+  }
+  30% {
+    background: linear-gradient(108deg, var(--color-5), #ededed);
+  }
+  40% {
+    background: linear-gradient(144deg, var(--color-5), #ededed);
+  }
+  50% {
+    background: linear-gradient(180deg, var(--color-5), #ededed);
+  }
+  60% {
+    background: linear-gradient(216deg, var(--color-5), #ededed);
+  }
+  70% {
+    background: linear-gradient(252deg, var(--color-5), #ededed);
+  }
+  80% {
+    background: linear-gradient(288deg, var(--color-5), #ededed);
+  }
+  90% {
+    background: linear-gradient(324deg, var(--color-5), #ededed);
+  }
+  to {
+    background: linear-gradient(360deg, var(--color-5), #ededed);
+  }
+}
+
+.commandsCol button:active {
+    height: 50px;
+    width: 100%;
+    font-family: "Kanit", sans-serif;
+    font-size: 17px;
+    border-style: inset;
+    border-width: 8px;
+    /* border-style: solid; */
+    /* border-color: #139cc5; */
+    border-color: #8f2828;
+    transition: all 0s linear;
+    
+}
+
+.commandsCol div {
+    overflow-y: scroll;
+    height: 100vh;
+}
+
+.defaultFont {
+  font-family: "Kanit", sans-serif;
+}
+
+#focusSelectCommonEvent {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  background: #000000cc;
+  z-index: 999991;
+}
+
+#focusSelectCommonEvent:hover {
+  cursor: not-allowed;
+}
+
+#focusSelectCommonEvent.focusDisappear {
+  z-index: -999999;
+  background: #00000000;
+  transition: all 0.5s ease-in-out;
+}
+
+.selectCommonEvent {
+  font-family: "Kanit", sans-serif;
+  background: white;
+  min-width: 240px;
+  color: #8f2828;
+  font-weight: 1000;
+  text-align: center;
+  font-size: 1rem;
+  z-index: 999999;
+}
+
+select.selectCommonEvent:hover, select.selectCommonEvent option:hover {
+  cursor: pointer;
+}
+
+.selectCommonEvent option {
+  background: #212121;
+  color: #ededed;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.selectCommonEvent option:checked {
+    background: var(--color-4);
+    color: #ededed;
+}
+
+.selectCommonEvent option:hover {
+    background: var(--color-5);
+    color: #ededed;
+}
+
+.importButton {
+  top: 0%;
+  padding-left: 15px;
+  padding-right: 15px;
+  font-size: 18px;
+  background-color: var(--color-4);
+  color: #ededed;
+}
+
+.importButton:hover {
+  border-color: #ededed;
+  border-width: 3px;
+  color: #ededed;
+}
+
+.saveCommonEventsButton {
+  color: white;
+  background-color: var(--color-5);
+  /* position: absolute; */
+  /* align-self: end; */
+  font-size: 1.2rem;
+  transform: skew(10, 10);
+}
+
+.saveCommonEventsButton:hover {
+  border-color: var(--color-3);
+  border-width: 3px;
+  color: var(--color-3);
+  background-color: var(--color-2);
+}
+
+canvas {
+    background-color: var(--color-canvas-bg);
+}
+
+.sequenceBlockNode:hover {
+  cursor: grab;
+}
+
+
+
+#MainMenuWindow {
+position: absolute;
+z-index: 9;
+background-color: #f1f1f1;
+border: 1px solid #d3d3d3;
+text-align: center;
+}
+
+#MainMenuWindowHeader {
+  padding: 10px;
+  cursor: move;
+  z-index: 10;
+  background-color: #2196F3;
+  color: #fff;
+}
+
+.vl {
+  border-left: 5px solid blue;
+  border-bottom: 5px solid orange ;
+  border-right: 5px solid purple ;
+  border-top: 5px solid yellow ;
+  
+  height: 500px;
+  position: absolute;
+}
+
+.CommandOptions {
+  position:absolute;
+  width:max-content;
+  height:max-content;
+  border: 2px solid black;
+  background-color:aqua;
+  z-index: 99999;
+}
+
+.textarea {
+  display: block;
+  width: 300px;
+  overflow: hidden;
+  resize: both;
+  min-height: 30px;
+  line-height: 20px;
+  background-color: white;
+  color:black;
+}
+
+div#CommandOptions{
+  border-radius: 20px;
+  padding: 10px;
+  background: linear-gradient(0deg, black, grey);
+  color: white;
+  box-shadow: 10px 10px 15px rgba(0,0,0,0.75);
+  max-height: 50%;
+  overflow-y: scroll;
+  right: 0;
+  top: 40px;
+}
+
+.hidden{
+  display:none;
+}
+
+.CommandsExpandButton{
+  border-radius: 15px;;
+  background: black;
+  border-color: white;
+  color:white;
+  text-shadow: 0px 0px 2px black;
+  cursor: row-resize;
+}
+
+.CommandsExpandButtonToggle{
+  background: white;
+  border-color: black;
+  color:black;
+  text-shadow: 0px 0px 2px white;
+}
+
+div#CommandOptionsHeader{
+  cursor: move;
+}
+
+button[disabled] {
+  background: grey;
+}
+
+button[disabled]:hover {
+  background: grey !important;
+}
