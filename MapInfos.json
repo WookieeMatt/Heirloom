@@ -1,0 +1,7 @@
+[
+null,
+{"id":1,"expanded":true,"name":"Lakeview Village","order":1,"parentId":0,"scrollX":976,"scrollY":3045.5},
+{"id":2,"expanded":true,"name":"Lakeview Village","order":2,"parentId":1,"scrollX":1061,"scrollY":2892.5},
+{"id":3,"expanded":false,"name":"Grandpa's House","order":3,"parentId":1,"scrollX":811,"scrollY":453.5},
+{"id":4,"expanded":false,"name":"Item Shop","order":4,"parentId":1,"scrollX":811,"scrollY":453.5}
+]
