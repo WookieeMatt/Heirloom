@@ -1,7 +1,17 @@
 [
 null,
-{"id":1,"expanded":true,"name":"Lakeview Village","order":1,"parentId":0,"scrollX":976,"scrollY":3045.5},
+{"id":1,"expanded":false,"name":"Lakeview Village","order":1,"parentId":0,"scrollX":1092,"scrollY":3046},
 {"id":2,"expanded":true,"name":"Lakeview Village","order":2,"parentId":1,"scrollX":1061,"scrollY":2892.5},
 {"id":3,"expanded":false,"name":"Grandpa's House","order":3,"parentId":1,"scrollX":811,"scrollY":453.5},
-{"id":4,"expanded":false,"name":"Item Shop","order":4,"parentId":1,"scrollX":811,"scrollY":453.5}
+{"id":4,"expanded":false,"name":"Item Shop","order":4,"parentId":1,"scrollX":811,"scrollY":453.5},
+{"id":5,"expanded":true,"name":"Sewers","order":5,"parentId":0,"scrollX":1092,"scrollY":604.6666666666666},
+{"id":6,"expanded":true,"name":"Sewers","order":6,"parentId":5,"scrollX":1092,"scrollY":604.6666666666666},
+{"id":7,"expanded":true,"name":"Sewers","order":7,"parentId":6,"scrollX":832,"scrollY":624},
+{"id":8,"expanded":false,"name":"Maintenance Room","order":8,"parentId":7,"scrollX":1092,"scrollY":604.6666666666666},
+{"id":9,"expanded":true,"name":"Sewers","order":9,"parentId":6,"scrollX":1092,"scrollY":604.6666666666666},
+{"id":10,"expanded":true,"name":"Sewers","order":10,"parentId":9,"scrollX":848,"scrollY":640},
+{"id":11,"expanded":true,"name":"Sewers","order":11,"parentId":10,"scrollX":832,"scrollY":624},
+{"id":12,"expanded":true,"name":"Sewers","order":12,"parentId":11,"scrollX":832,"scrollY":624},
+{"id":13,"expanded":true,"name":"Sewers","order":13,"parentId":12,"scrollX":832,"scrollY":624},
+{"id":14,"expanded":true,"name":"Sewers","order":14,"parentId":11,"scrollX":832,"scrollY":624}
 ]
